@@ -1,0 +1,107 @@
+\documentclass[12pt,oneside,a4paper,titlepage]{book}
+%% \oddsidemargin52pt      %commentare se si stampa solo fronte
+%% \evensidemargin10pt     %commentare se si stampa solo fronte
+
+
+\usepackage[italian]{babel}
+%\usepackage[signatures]{frontespizio}
+%packages
+\usepackage[utf8x]{inputenc}
+%\usepackage{graphicx}
+
+\usepackage{listings}
+%\usepackage{amsmath}
+%\usepackage{amsfonts}
+%\usepackage{fancyhdr}
+
+%listening
+\lstset{
+basicstyle=\footnotesize,
+language=C,                % choose the language of the code
+%numbers=left,                   % where to put the line-numbers
+%stepnumber=2,                   % the step between two line-numbers. If it's 1 each line 
+%numbersep=5pt,                  % how far the line-numbers are from the code
+frame=single,                % adds a frame around the code
+tabsize=2,                % sets default tabsize to 2 spaces
+captionpos=b,                   % sets the caption-position to bottom
+breaklines=true,                % sets automatic line breaking
+breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+stringstyle=\footnotesize,
+}
+
+%-----------------------------------------------------------------
+%Intestazione e piè di pagina
+%-----------------------------------------------------------------
+
+%\pagestyle{headings}
+
+\pagestyle{fancy}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+\fancyhf{}
+
+\fancyhead[LE,RO]{\bfseries\thepage}
+\fancyhead[LO]{\bfseries\rightmark}
+\fancyhead[RE]{\bfseries\leftmark}
+\renewcommand{\headrulewidth}{0.3pt}
+\renewcommand{\footrulewidth}{0pt}
+\addtolength{\headheight}{0.3pt} % riserva spazio per la linea
+\fancypagestyle{plain}{
+    \fancyhead{}                        % ignora, nello stile plain, le intestazioni
+    \renewcommand{\headrulewidth}{0pt}  % e la linea
+}
+
+
+%Interlinea
+\linespread{1.1}
+
+%Commands
+\newcommand{\code}[1]{\lstinline$#1$}
+
+\begin{document}
+
+%Frontespizio
+%Per avere il frontespizio compilare tesi.tex, poi tesi-frn.tex e dinuovo tesi.tex:
+
+%pdflatex tesi
+%pdflatex tesi-frn
+%pdflatex tesi
+
+%% \begin{frontespizio}
+%% \Istituzione{Universit\`a della Calabria}
+%% \Logo[3.5cm]{unical}
+%% \Facolta{Scienze Matematiche Fisiche e Naturali}
+%% \Corso[Laurea]{Informatica}
+%% \Annoaccademico{2009--2010}
+%% \Dipartimento{Matematica}
+%% \Titoletto{Tesi di laurea}
+%% \Titolo{dROPper: strumento semiautomatico per la generazione payload ROP}
+%% \Candidato[117678]{Oliverio Marco}
+%% \Relatore{Dott. Ianni Giovanmbattista}
+%% \Margini{2.0cm}{1.5cm}{2.0cm}{1.5cm}
+%% \end{frontespizio}
+
+\lstset{language=C}
+
+%Per stampare solo fronte correggere i vari clearpage e newpage 
+%neccessari per l'aggiunta di pagine bianche aggiuntive nel fronte-retro.
+
+%% \clearpage{\pagestyle{empty}\cleardoublepage}
+%% \clearpage{\pagestyle{empty}\cleardoublepage}
+%% \frontmatter
+%% \tableofcontents
+
+\include{introduzione}
+\include{exploit}
+\include{dropper}
+
+%% \clearpage{\pagestyle{empty}\cleardoublepage}
+%% \listoffigures \addcontentsline{toc}{chapter}{Indice delle figure}
+%% \listoftables \addcontentsline{toc}{chapter}{Indice delle tabelle}
+%% \clearpage{\pagestyle{empty}\cleardoublepage}
+
+\bibliographystyle{plain}
+\bibliography{tesi}
+
+%% \include{latex}
+\end{document}
