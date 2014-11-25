@@ -11,10 +11,10 @@ oggetto eseguibile, una catena di gadget che iniettata nello stack
 dell'eseguibile consenta di prenderne il controllo, eseguendo un
 comando arbitrario sulla macchina. Lo strumento deve poter applicare
 tecniche note per eludere misure di protezioni esistenti come la
-casualizzazione degli indirizzi (\lstline{ASRL}), l'isolamento delle
-pagine (\lstline{NX}) o la read-only relocation. Dropper analizza il
+casualizzazione degli indirizzi (\lstinline{ASRL}), l'isolamento delle
+pagine (\lstinline{NX}) o la read-only relocation. Dropper analizza il
 binario utilizzando alcune delle funzionalità del framework per
-l'analisi dei binari \lstline{BARF}. Il linguaggio utilizzato per la
+l'analisi dei binari \lstinline{BARF}. Il linguaggio utilizzato per la
 scrittura di dropper è python. Il file oggetto eseguibili supportati
 da dropper sono ELF32 e ELF64 ed è destinato ad analisi di binari su
 piattaforme GNU/Linux. Dropper, nella sua fase di analisi, estrapola
