@@ -32,7 +32,7 @@ queste sequenze avviene, nell'implementazione attuale, in maniera
 programmatica, cioè la procedura per la sua costruzione è codificata
 in un algoritmo. È interessante esplorare metodi di generazione di
 sequenze in maniera dichiarativa, ad esempio utilizzando linguaggi di
-planning come \lstinline{PDDL}\cite{}. Una possibile modellizzazione è
+planning come \lstinline{PDDL}\cite{pddl-97}. Una possibile modellizzazione è
 quella in cui per ogni sequenza ``elementare'' vengono codificate le
 precondizioni e gli effetti. Viene modellato lo stato del sistema
 (memoria e registri) che si desidera ottenere dopo l'esecuzione di una
@@ -73,18 +73,18 @@ azioni degli altri moduli. Il modulo legge il file e instanzia un
 oggetto di tipo gadgets tools che si occuperà di estrapolare i gadgets
 dal binario e analizzarli. Per il parsing delle strutture dati
 presenti nell'elf dropper utilizza la libreria
-\lstinline{elftools}\cite{}. Combinando le informazioni provenienti da
-queste sezioni dropper ricava la lista delle funzioni che il file
-oggetto eseguibile utilizza e le relative entry nella \emph{Procedure
-  Linkage Table} (vedi \rif{}). La presenza di alcune funzioni può
-semplificare molto la generazione della catena, di fatto
-trasformandola in una serie di \emph{return-to-plt}\rif{}. Dropper
-analizza altre strutture chiave dell'ELF per individuare aree nella
-memoria dell'immagine del processo dove è possibile
-scrivere. L'utente, interagendo con il modulo, fornisce informazioni
-aggiuntive necessarie alla generazione della catena e linee guida
-sulla strategia utilizzare. Tra le informazioni che il modulo non può
-ricavare automaticamente troviamo:
+\lstinline{pyelftools}\cite{pyelftools}. Combinando le informazioni
+provenienti da queste sezioni dropper ricava la lista delle funzioni
+che il file oggetto eseguibile utilizza e le relative entry nella
+\emph{Procedure Linkage Table} (vedi \rif{}). La presenza di alcune
+funzioni può semplificare molto la generazione della catena, di fatto
+trasformandola in una serie di \emph{return-to-plt}. Dropper analizza
+altre strutture chiave dell'ELF per individuare aree nella memoria
+dell'immagine del processo dove è possibile scrivere. L'utente,
+interagendo con il modulo, fornisce informazioni aggiuntive necessarie
+alla generazione della catena e linee guida sulla strategia
+utilizzare. Tra le informazioni che il modulo non può ricavare
+automaticamente troviamo:
 
 \begin{itemize}
   \item La possibilità da parte dell'utente di controllare un file
@@ -164,9 +164,9 @@ strategie alternative potrebbero comprendere:
 
 \item Utilizzo delle funzioni \lstinline{strcpy} o \lstinline{memcpy}
   per copiare byte presenti in posizioni note all'interno
-  dell'eseguibile nella posizione desiderata \cite{}. Questa tecnica,
-  copiando verosimilmente solo un byte per volta tende anch'essa a
-  generare payload abbastanza lunghi
+  dell'eseguibile nella posizione desiderata
+  \cite{roglia:2009}. Questa tecnica, copiando verosimilmente solo un
+  byte per volta tende anch'essa a generare payload abbastanza lunghi
 
 \item Nel caso un bug renda possibile la conoscenza dell'indirizzo
   dello stack gli argomenti possono essere scritti direttamente nello
@@ -187,9 +187,9 @@ e fissa all'interno della memoria dell'immagine del processo. Nel caso
 invece che la funzione non venga utilizzata un'alternativa è quella di
 adoperare tecniche per ricavare l'indirizzo della funzione partendo
 dall'indirizzo di un'altra funzione della stessa libreria che invece
-viene utilizzata dal programma \cite{}. Questo funziona perchè
-nonostante l'indirizzo inziale al quale una libreria viene caricata
-sia casualizzato, gli offset tra le funzioni non cambiano. Alcune
+viene utilizzata dal programma. Questo funziona perchè nonostante
+l'indirizzo inziale al quale una libreria viene caricata sia
+casualizzato, gli offset tra le funzioni non cambiano. Alcune
 considerazioni sull'utilizzo di questa tecnica:
 
 \begin{itemize}
@@ -259,7 +259,7 @@ iniettare sullo stack.
 
 Per la ricerca dei gadget all'interno del file oggetto eseguibile
 viene utilizzata la classe \lstinline{GadgetFinder} del framework
-BARF, che implementa al suo interno l'algoritmo galileo\cite{}. 
+BARF, che implementa al suo interno l'algoritmo galileo\cite{roemer-12}. 
 
 %TODO descrivere galileo ?
 %TODO utilizzare il nostro ?
