@@ -76,7 +76,7 @@ presenti nell'elf dropper utilizza la libreria
 \lstinline{pyelftools}\cite{pyelftools}. Combinando le informazioni
 provenienti da queste sezioni dropper ricava la lista delle funzioni
 che il file oggetto eseguibile utilizza e le relative entry nella
-\emph{Procedure Linkage Table} (vedi \rif{}). La presenza di alcune
+\emph{Procedure Linkage Table} (vedi TODORIF). La presenza di alcune
 funzioni può semplificare molto la generazione della catena, di fatto
 trasformandola in una serie di \emph{return-to-plt}. Dropper analizza
 altre strutture chiave dell'ELF per individuare aree nella memoria
@@ -93,7 +93,7 @@ automaticamente troviamo:
   \item I file oggetto condivisi utilizzati dall'eseguibile sulla
     macchina dove si intende far eseguire la catena (per la
     ricavazione degli offset da utilizzare nelle tecniche di
-    sovrascrizione della GOT Table vedi \rif{})
+    sovrascrizione della GOT Table vedi TODO)
 
   \item Eventuali caratteri che non possono comparire all'interno del
     payload
@@ -218,7 +218,7 @@ considerazioni sull'utilizzo di questa tecnica:
     funzione non variano tra un'esecuzione e la successiva. Con
     questa parziale conoscenza del valore iniziale si può comunque
     creare una catena con un alta percentuale di successo come
-    descritto in \rif{}
+    descritto in TODO
 
   \item Un tipo di attacco di questo tipo può essere mitigato se le
     rilocazioni vengono impostate come read-only. In questo caso
@@ -286,7 +286,7 @@ fasi: (a) emulazione e cataloghizzazione, (b) verifica e validazione e
 La classe \lstinline{GadgetClassifier} emula il gadget tenendo traccia
 delle operazioni sui registri e sulla memoria. Con questi dati si
 verifica se il gadget appartiene ad una o più categorie indicate in
-\rif{}. %TODO vanno elencate le categorie?  Inoltre vengono
+TODORIF. %TODO vanno elencate le categorie?  Inoltre vengono
 identificati quali registri vengono utilizzati come operandi della
 funzione alla quale il gadget viene associato. Basandosi su una
 simulazione e non su un effettiva analisi semantica questa
