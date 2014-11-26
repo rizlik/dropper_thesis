@@ -15,8 +15,8 @@ casualizzazione degli indirizzi (\lstinline{ASRL}), l'isolamento delle
 pagine (\lstinline{NX}) o la read-only relocation. Dropper analizza il
 binario utilizzando alcune delle funzionalità del framework per
 l'analisi dei binari \lstinline{BARF}. Il linguaggio utilizzato per la
-scrittura di dropper è python. I file oggetto eseguibili supportati
-da dropper sono ELF32 e ELF64 ed è destinato ad analisi di binari su
+scrittura di dropper è python. I file oggetto eseguibili supportati da
+dropper sono ELF32 e ELF64 ed è destinato ad analisi di binari su
 piattaforme GNU/Linux. Dropper, nella sua fase di analisi, estrapola
 dal file binario i gadgets disponibli, per poi estrapolarne la
 semantica. Per questi compiti dropper si avvale sia dell'emulazione
@@ -32,16 +32,17 @@ queste sequenze avviene, nell'implementazione attuale, in maniera
 programmatica, cioè la procedura per la sua costruzione è codificata
 in un algoritmo. È interessante esplorare metodi di generazione di
 sequenze in maniera dichiarativa, ad esempio utilizzando linguaggi di
-planning come \lstinline{PDDL}\cite{pddl-97}. Una possibile modellizzazione è
-quella in cui per ogni sequenza ``elementare'' vengono codificate le
-precondizioni e gli effetti. Viene modellato lo stato del sistema
-(memoria e registri) che si desidera ottenere dopo l'esecuzione di una
-sequenza di gadget. Una volta codificato il problema in questi termini
-si può chiedere ad un planner, come se fosse una sorta di oracolo, in
-che sequenza collegare le varie azioni (cioè le varie sequenze
-elementari di gadget) per ottenere quello stato. La rappresentazione
-delle informazioni sulla semantica dei gadget è espressa in questo
-modo in forma esplicita, e non più codificata in un algoritmo.
+planning come \lstinline{PDDL}\cite{pddl-97}. Una possibile
+modellizzazione è quella in cui per ogni sequenza ``elementare''
+vengono codificate le precondizioni e gli effetti. Viene modellato lo
+stato del sistema (memoria e registri) che si desidera ottenere dopo
+l'esecuzione di una sequenza di gadget. Una volta codificato il
+problema in questi termini si può chiedere ad un planner, come se
+fosse una sorta di oracolo, in che sequenza collegare le varie azioni
+(cioè le varie sequenze elementari di gadget) per ottenere quello
+stato. La rappresentazione delle informazioni sulla semantica dei
+gadget è espressa in questo modo in forma esplicita, e non più
+codificata in un algoritmo.
 
 Dropper è composto da tre moduli principali:
 
@@ -285,7 +286,8 @@ fasi: (a) emulazione e cataloghizzazione, (b) verifica e validazione e
 La classe \lstinline{GadgetClassifier} emula il gadget tenendo traccia
 delle operazioni sui registri e sulla memoria. Con questi dati si
 verifica se il gadget appartiene ad una o più categorie indicate in
-TODORIF. %TODO vanno elencate le categorie?  Inoltre vengono
+\cite{schwartz-2011}. %TODO vanno elencate le categorie?  Inoltre
+                      %vengono
 identificati quali registri vengono utilizzati come ``operandi'' della
 funzione alla quale il gadget viene associato. Basandosi su una
 simulazione e non su un effettiva analisi semantica questa
@@ -421,6 +423,13 @@ chunks in ingresso.
 
 
 \section{Implementazione attuale}
+
+\subsection{dropper}
+
+
+Attualmente il modulo dropper implementa come strategie per scrivere
+sulla memoria l'utilizzo della funzione \lstinline{read} oppure
+l'utilizzo di una serie di gadget che ci consentano la scrittura 
 
 %TODO spostare in implementazione attuale?
 %% Questo avviene emulando tutti i gadgets, e nello stesso momento
