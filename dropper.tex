@@ -2,7 +2,7 @@
 
 La prima parte di questo capitolo descrive l'architettura alla quale
 si sta facendo riferimento per lo sviluppo di dropper mentre nella
-seconda si farà una analisi dettagliata dell'attuale implementazione.
+seconda si farà un'analisi dettagliata dell'attuale implementazione.
 
 \section{Architettura principale}
 
@@ -15,7 +15,7 @@ casualizzazione degli indirizzi (\lstinline{ASRL}), l'isolamento delle
 pagine (\lstinline{NX}) o la read-only relocation. Dropper analizza il
 binario utilizzando alcune delle funzionalità del framework per
 l'analisi dei binari \lstinline{BARF}. Il linguaggio utilizzato per la
-scrittura di dropper è python. Il file oggetto eseguibili supportati
+scrittura di dropper è python. I file oggetto eseguibili supportati
 da dropper sono ELF32 e ELF64 ed è destinato ad analisi di binari su
 piattaforme GNU/Linux. Dropper, nella sua fase di analisi, estrapola
 dal file binario i gadgets disponibli, per poi estrapolarne la
@@ -82,7 +82,7 @@ trasformandola in una serie di \emph{return-to-plt}. Dropper analizza
 altre strutture chiave dell'ELF per individuare aree nella memoria
 dell'immagine del processo dove è possibile scrivere. L'utente,
 interagendo con il modulo, fornisce informazioni aggiuntive necessarie
-alla generazione della catena e linee guida sulla strategia
+alla generazione della catena e linee guida sulla strategia da
 utilizzare. Tra le informazioni che il modulo non può ricavare
 automaticamente troviamo:
 
@@ -157,7 +157,7 @@ seguito:
 
 \end{itemize}
 
-Queste due sono le uniche due tecniche attualmente implementate,
+Queste appena elencate le uniche due tecniche attualmente implementate,
 strategie alternative potrebbero comprendere:
 
 \begin{itemize}
@@ -178,7 +178,7 @@ Una volta scritti gli argomenti per la funzione da richiamare in
 memoria è necessario chiamare la funzione stessa. La funzione deve
 permetterci di eseguire un comando arbitrario. All'interno della
 \lstinline{libc} sono presenti due funzioni con queste
-caratteristiche: \lstinline{excve} e \lstinline{system}. Un ritorno
+caratteristiche: \lstinline{execve} e \lstinline{system}. Un ritorno
 diretto alla funzione solitamente non può avvenire, in quanto il
 valore del suo indirizzo in memoria è casualizzato. Tuttavia, se una
 funzione è utilizzata all'interno del programma, basterà ritornare
@@ -236,16 +236,15 @@ considerazioni sull'utilizzo di questa tecnica:
 
 È interessante notare come, anche se vi è una guida nelle operazioni
 da seguire basata sulla strategia scelta, la seguenza di operazioni
-(cioè di gadget) che conducono allo stato del sistema desiderato sono
-molteplici. Ad esempio l'operazione aritmentica per il calcolo
-dell'indirizzo della funzione bersaglio potrebbe avvenire in memoria,
-oppure tra due registri e poi salvata in memoria. Qui si notano i
-vantaggi che potrebbe avere un approccio che modelli la situazione in
-un problema di planning rispetto ad un approccio di tipo
-programmatico. Infatti, con un approccio programmatico, tutte le
-combinazioni vanno codificate nell'algoritmo, una procedura la cui
-completezza è più difficile da dimostrare e che è molto più soggetta
-ad errori.
+che conducono allo stato del sistema desiderato sono molteplici. Ad
+esempio l'operazione aritmetica per il calcolo dell'indirizzo della
+funzione bersaglio potrebbe avvenire in memoria, oppure tra due
+registri e poi salvata in memoria. Qui si notano i vantaggi che
+potrebbe avere un approccio che modelli la situazione in un problema
+di planning rispetto ad un approccio di tipo programmatico. Infatti,
+con un approccio programmatico, tutte le combinazioni vanno codificate
+nell'algoritmo, una procedura la cui completezza è più difficile da
+dimostrare e che è molto più soggetta ad errori.
 
 \subsection{Modulo gadgetstools}
 
@@ -280,14 +279,14 @@ difficile porre al risolutore domande che riguardino il numero di
 letture effettuate, o domandare se un'area di memoria viene mai
 letta. L'estrapolazione della semantica di un gadget avviene in tre
 fasi: (a) emulazione e cataloghizzazione, (b) verifica e validazione e
-(c) verifica degli effetti secondati.
+(c) verifica degli effetti secondari.
 
 \subsubsection{Emulazione e cataloghizzazione}
 La classe \lstinline{GadgetClassifier} emula il gadget tenendo traccia
 delle operazioni sui registri e sulla memoria. Con questi dati si
 verifica se il gadget appartiene ad una o più categorie indicate in
 TODORIF. %TODO vanno elencate le categorie?  Inoltre vengono
-identificati quali registri vengono utilizzati come operandi della
+identificati quali registri vengono utilizzati come ``operandi'' della
 funzione alla quale il gadget viene associato. Basandosi su una
 simulazione e non su un effettiva analisi semantica questa
 cataloghizzazione deve essere poi verificata. Per le simulazioni
@@ -323,14 +322,14 @@ sono gli ``operandi'' della funzione. Si impongono poi al risolutore
 nuovamente le formule SMT che rappresentano il gadget.  Questa volta
 si impongono però come valori iniziali per i registri operandi i
 valori ottenuti dalla prima verifica e, inoltre, che il valore finale
-sia diverso da quello voluto. La non soddisfacibilità di questa
+sia diverso da quello aspettato. La non soddisfacibilità di questa
 formula ci dà la certezza che in tutti i modelli che soddisfano la
 semantica del gadget, che hanno come valori iniziali dei registri
-``operandi'' quelli ottenuti dalla prima verifica, portano lo stato
-del contesto ai valori voluti. Questa verifica esclude che ci siano
-effetti secondari che possono interferire con gli effetti della nostra
-funzione. È da notare che queste proprietà sono verificate solo per
-dei valori casuali e dovrebbero essere verificate per tutti i
+``operandi'' quelli ottenuti dalla prima verifica, lo stato finale del
+contesto rispecchi i valori attesi. Questa verifica esclude che ci
+siano effetti secondari che possono interferire con gli effetti della
+nostra funzione. È da notare che queste proprietà sono verificate solo
+per dei valori casuali e dovrebbero essere verificate per tutti i
 valori. Questo non viene fatto sia per questioni di efficenza sia per
 non includere quantificatori universali nelle formule, complicando di
 molto il lavoro del risolutore e rischiando di ottenere formule non
@@ -352,7 +351,7 @@ un area di memoria. Per questo motivo per escludere effetti
 secondari di questo tipo il gadget viene emulato con i valori di
 ingresso ricavati al punto 2, e ci si assicura che non vengano lette
 e scritte aree di memoria che non siano quelle relative alla
-funzione propria del gadget o dello stack.
+funzione propria del gadget o allo stack.
 
 
 La linea guida generale appena descritta va adattata alla tipologia di
@@ -390,7 +389,7 @@ Questo modulo si occupa di generare il payload vero e proprio partendo
 dai gadget analizzati dal modulo gadgetstools. Questa classe è
 strutturata in modo che i diversi chunk prodotti siano concatenabili,
 e che la loro concatenazione dia a sua una volta un frammento
-contatenabile. Questo ci consente di associare ad una data funzione un
+concatenabile. Questo ci consente di associare ad una data funzione un
 payload e utilizzarlo in diverse parti del programma senza dover più
 conoscerne i dettagli. Ci sono diverse cose da tenere in conto quando
 si costruisce il payload partendo dai gadgets, quasi tutte legate alla
@@ -411,12 +410,12 @@ manipolazione dello stack da parte del gadget stesso:
 \end{itemize}
 
 Le informazioni relative alle tre problematiche descritte sopra
-vengono estrapolate dal gadgetstools e sono disponibili al payload
-chunk. La procedura del payload è specifica del tipo di gadget, i
-metodi \lstinline{PayloadChunk.chain} e
+vengono estrapolate dal gadgetstools. La procedura di generazione del
+payload è specifica del tipo di gadget, i metodi
+\lstinline{PayloadChunk.chain} e
 \lstinline{PayloadChunk.get_general_chunk} sono invece generici,
 prendono come argomento una lista di chunk e restiuiscono
-rispettivamente il payload dei chunk concatenati o uno chunk che può
+rispettivamente il payload dei chunk concatenati o un chunk che può
 essere nuovamente concatenato e rappresenta la concatenazione dei
 chunks in ingresso.
 
