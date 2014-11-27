@@ -300,7 +300,7 @@ accurata esplicitando le relazioni tra i valori che i registri hanno
 all'inizio e alla fine della simulazione o tra i valori iniziali dei
 registri e gli accessi alla memoria.
 
-\subsubsection{Verifica e validazione}
+\subsubsection{Verifica e validazione}\label{s:verifica_validazione}
 Si deve poi verificare che, anche se il gadget esegua la funzione
 della categoria alla quale viene assegnato, possa essere utilizzato
 per i valori di tutto il ``dominio'' di questa funzione, cioè che non
@@ -569,8 +569,239 @@ molto grandi può durare diversi minuti. Al loro interno questi metodi
 utilizzano la libreria \lstinline{pickle} per la serializzazione degli
 oggetti.
 
+\subsection{GadgetsTools}
 
-%TODO spostare in implementazione attuale?
+Questo modulo estrapola e cataloga i gadget presenti nel binario in
+esame ed espone i metodi di creazione delle catene per l'esecuzione di
+diverse funzioni. Le catene vengono costruite arrangiando i gadget
+disponibili e collaborando con il modulo payloadchunk che si occupa
+della generazione del payload vero e proprio. Fondamentale per poter
+utilizzare un gadget è poter controllare i registri coinvolti nelle
+sue operazioni, per questo motivo la prima analisi che viene condotta
+una volta ottenuta la lista dei gadget è la selezione di quelli che ci
+consentono di controllare i registri. La ricerca dei gadget viene
+effettuata in tutte le sezioni che vengono caricate in memoria (tipo
+\lstinline{SHT_PROGBITS}) e marcate come eseguibili.
+
+\subsubsection{Selezione dei gadget per l'impostazione dei registri}
+
+La logica e le strutture dati utilizzate per la selezione e la
+gestione dei gadget per l'impostazione dei registri è contenuta nella
+classe \lstinline{RegSet}. Il metodo \lstinline{_analyze_gadget}
+riceve come argomento in ingresso un gadget e, nel caso esso possa
+essere utilizzato per l'impostazione di registri, viene aggiunto nelle
+strutture dati interne alla classe. La classe espone il metodo
+\lstinline{get_chunk} che riceve come argomento un dizionario, le cui
+chiavi e valori rappresentano rispettivamente i nomi dei registri e i
+valori ai quali si desidera impostarli e restituisce la catena che li
+imposta a quei valori. Attualmente solo gadget che contengono
+istruzioni di tipo \lstinline{pop reg} vengono considerati come
+potenziali candidati per l'impostazione di registri. L'analisi avviene
+tramite la simulazione istruzione per istruzione. Se l'istruzione
+attuale è del tipo \lstinline{pop reg} allora si memorizza il nome del
+registro e l'offset tra il valore attuale dello stack e quello
+all'inizio della simulazione. Questo ci consente di conoscere dove
+posizionare il valore da impostare nel registro al momento della
+generazione del payload. Durante la simulazione si controlla anche che
+le istruzioni che non sono del tipo \lstinline{pop reg} non eseguano
+operazioni di lettura o scrittura sulla memoria. Questo ci consente di
+scartare già in questa fase i gadget che presentano effetti
+secondari. Alla fine della funzione abbiamo la lista dei registri che
+il gadget può impostare con i relativi offset dello stack. La funzione
+\lstinline{get_chunk} invece restituisce una catena che consente di
+impostare l'insieme dei registri che riceve in ingresso. Dato che un
+gadget potrebbe impostare più di un registro, la scelta dei gadget che
+andranno a comporre questa catena è riducibile ad un problema di
+\emph{set covering}. È preferibile che il payload generato dalla
+catena sia il più piccolo possibile. La lunghezza della catena è
+influenzata sia dal numero di gadget utilizzati, sia dal padding che è
+necessario inserire nell'utilizzo di ogni gadget per via delle
+operazioni che esso effettua sul registro dello stack. Attualmente per
+trovare la catena viene utilizzato un algoritmo greedy che scorre i
+registri da ``coprire'' e, se il registro non è già coperto da un
+gadget inserito nella catena, sceglie il gadget che lo copra e che
+necessita del minor padding possibile. Se l'aggiunta di un gadget ne
+rende superfluo uno già presente nei candidati quest'ultimo viene
+rimosso. La soluzione trovata con quest'algoritmo non è ottima.
+
+\subsubsection{Selezione dei gadget per la scrittura in memoria}
+
+La logica e le strutture dati per gestire i gadget che ci consentono
+di scrivere in memoria si trovano nella classe
+\lstinline{MemoryStore}.  Durante la prima classificazione la classe
+\lstinline{GadgetClassifier} del framework BARF verifica se a seguito
+di alcune simulazioni un valore presente in un registro (denominato
+sorgente) viene scritto in una locazione di memoria il cui indirizzo
+corrisponde al valore di un registro (denominato destinazione) e un
+eventuale offset. Ogni volta che questa condizione viene verificata il
+gadget viene aggiunto alla categoria StoreMemory. È da notare che la
+condizione di cui sopra potrebbe verificarsi per più coppie di
+registri nello stesso gadget, per oguna di queste viene creato un
+oggetto gadget di tipo StoreMemory e aggiunto alla categoria. La
+classe parte da questi gadget per procedere alla fase di verifica e
+validazione. Inanzitutto se il registro di destinazione è il registro
+dello stack il gadget viene scartato. Questo fa in modo che non
+vengano presi in considerazione i gadget con istruzioni tipo
+\lstinline{push reg}. Questi gadget infatti, solitamente non
+consentono di scrivere in una regione arbitraria della memoria, oltre
+a complicare la gestione dello schema dello stack. Dopo di che vengono
+scartati anche i gadget che hanno come registro di destinazione rip e
+eip. Infatti essendo questo registro fisso rispetto all'istruzione che
+lo esegue neanche questi gadget ci consentono di scrivere in una
+posizione arbitraria di memoria. Dopo di che si procede seguendo le
+linee guidea descritte in \ref{s:verifica_validazione}: il gadget
+viene scartato se non si possono controllare i registri sorgente e
+destinazione, si verifica e valida la generalità e ci si assicura che
+il gadget non presenti effetti secondari. I valori scelti casualmente
+per la verifica e la validazione sono la locazione di memoria e il
+valore da scrivere. Nella verifica degli effetti secondari si
+controlla che non ci siano scritture al di fuori della locazione
+scelta e dello stack. Il metodo \lstinline{get_chunk} invece prende
+come argomenti un'indirizzo in memoria e dei valori e restituisce una
+catena che scrive i valori in memoria partendo da quell'indirizzo. Il
+metodo sceglie uno dei gadget disponibili e calcola quante iterazioni
+sono necessarie per la scrittura dei valori. Per ogni iterazione poi
+utilizza il risolutore SMT per ottenere i valori dei registri sorgente
+e destinazione corretti. Sempre per ogni iterazione, si utilizza la
+classe \lstinline{regset} per ottenere una catena che setti i registri
+a quei valori, e la si concatena a sua volta al gadget che si sta
+utilizzando per scrivere in memoria. Viene restituita la
+concatenazione delle catene create per ogni iterazione, che
+verosimilimente scriverà in memoria, partendo dall'indirizzo indicato
+i valori in ingresso. L'implementazione attuale di questa funzione è
+riportata nel listato \rif{cod:memstr.get_chunk}
+
+\subsubsection{Selezione dei gadget per la operazioni aritmetiche in
+  memoria}
+
+La logica e le strutture dati per la gestione dei gadget che ci
+consentono di scrivere in memoria risiedono nella classe
+\lstinline{aritmeticmemorystore}. Anche in questo caso si parte dai
+gadget classificati dal framework BARF, ma appartenenti, per
+l'appunto, alla categoria Arithmetic Memory Store. Un gadget viene
+inserito in questa categoria se, dopo alcune simulazioni del gadget,
+una locazione di memoria viene modificata e come valore finale
+riflette il risultato di un'operazione aritmetica binaria tra il
+valore precedente di quella locazione e il valore iniziale contenuto
+in un registro. Inoltre si individua un registro che potrebbe essere
+usato dal gadget come indirizzo della locazione di memoria (insieme ad
+un eventuale offset). Dato che la simulazione viene ripetuta più volte
+i falsi positivi vengono ridotti. È possibile che un gadget esibisca
+il comportamento di cui sopra più di una volta, anche in questo caso
+vengono creati diversi oggetti di tipo Arithmetic Memory
+Store. L'analisi di questi gadget procede, come anche nella categoria
+precedente, sulla falsa riga della procedura indicata in
+\ref{s:verifica_validazione}. Tuttavia un'attenzione particolare va
+posta nell'analisi dei gadget che utilizzano un'operazione di
+addizione che considerano il valore di riporto (ad esempio adc su
+intel). Questi gadget possono rilevarsi molto utili. Spesso infatti
+sono disponibili solo gadget aritmetici che ci consentono di
+aggiungere un byte per volta. Effettuare un'operazione di got patching
+(vedi sez. \rif{sec:got_patching} un byte per volta senza considerare
+i valori di ritorno tra un byte e il successivo può portare ad un
+risultato errato dell'operazione che si sta effettuando. Per poter
+permettere la cataloghizzazoine di questo tipo di gadget, si è dovuto
+applicare una piccola patch al framework per permetterci di poter
+controllare in qualche modo il contesto dei registri che utilizza
+durante le simulazioni per la classificazione. Infatti il
+classificatore, nella traduzione in reil, considera il flag carry del
+registro dei flag come un registro a se stante di 16bit che viene
+aggiunto al risultato dell'operazione. Dato che questo valore è
+impostato casualmente i risultati delle simulazioni vengono
+falsati. La nostra modifica ci permette di settare un valore
+arbitrario per alcuni registri nelle simulazione, quindi
+inizializzeremo il ``registro'' con il quale è rappresentato il carry
+flag a zero. Questo viene anche imposto nelle verifiche che utilizzano
+un risolutore SMT. In più viene aggiunta una seconda coppia di
+modellazioni SMT con le quali si verifica se il gadget in esame
+utilizza il carry flag nell'operazione e se a seguito di un'operazione
+che sicuramente generi un valore di ritorno, il carry flag al termine
+del gadget abbia valore uno. Questo ci dà la certezza rispettivamente
+che il gadget va ad utilizzare il carry flag nelle operazioni di
+addizione e che le operazioni successive all'interno del gadget non
+vadano ad influenzare il carry flag. Come detto sopra, per costruire
+una catena che ci consenta di aggiungere un valore arbitrario ad una
+locazione di memoria arbitraria, bisogna avere a disposizione o gadget
+aritimetici la cui dimensione dell'operazione sia di almeno un byte
+più grande dell'addendo o un gadget che, per l'appunto, consenta di
+eseguire operazioni utilizzando i valori di ritorno. In questo secondo
+caso però bisogna anche però concatenare, se è disponibile, un gadget
+che abbia come effetto quello di azzerare il carry flag, da inserire
+prima dell'operazione. La logica per la ricerca di questo tipo di
+gadget è presente nella classe \lstinline{ClearCarryFlag}. È da notare
+che se questo tipo di gadget non fosse presente la catena generata
+potrebbe non avere l'esito sperato, tuttavia è presumibile che in
+molti tipi di exploit il carry flag abbia sempre lo stesso valore
+all'inizio dell'esecuzione della catena. La sottrazione quindi di
+un'unità al primo byte dell'offset dovrebbe essere sufficente per
+generare una catena corretta. Se nè un un gadget che consenta di
+aggiungere abbastanza bytes per volta nè un gadget che effettua
+operazioni considerando il valore di riporto sono disponibili è
+tuttavia possibile generare una catena con alte probabilità di
+successo. Infatti l'indirizzo di memoria nel quale viene caricato il
+file oggetto condiviso della libreria, nonstante sia casualizzato,
+dev'essere allineato in memoria al valore specificato nel parametro
+\lstinline{p_align] all'interno del program header. Questo comporta
+che un certo numero di bits meno sigificativi dell'indirizzo di una
+funzione non cambino da un'esecuzione all'altra. Solitamente sono i
+21bits meno significativi, e l'offset tra due funzioni nella libc
+solitamente è tre byte. Questo fa si che si può calcolare il valore di
+riporto per i primi due byte. Solo il valore di riporto dell'ultimo
+byte (di cui conosciamo solo la parte meno significativa) risulterebbe
+casuale, facendo si che si possano generare catene con probabilità di
+successo pari almeno al 50\%.
+
+È da notare che nell'implementazione attuale manca ancora
+l'implementazione della logica per la ricerca e la verifica di
+importanti categorie di gadget (come Jump, MemoryLoad, MoveRegister o
+Arithmetic). L'implementazione di queste categorie dovrebbe consentire
+la generazione di catene in condizioni più articolate o quando le
+categorie di gadget attualmente implementate non sono disponibili.
+
+\subsection{PayloadChunks}
+
+Questo modulo si occupa di generare a partire da una lista ordinata di
+uno o più gadgets un array binario di dati da iniettare nello stack
+del file oggetto eseguibile esaminato. La preparazione del payload
+varia rispetto al gadget per il quale si sta creando il chunk e può
+consistere nel solo indirizzo del gadget, o in schemi più complicati
+come indirizzi di funzioni più relativi argomenti o a valori da
+trasferire dalla stack ai registri. Ogni classe che si occupa della
+generazione di un particolare tipo di chunk ha le informazioni
+necessarie per permettere al chunk stesso di essere concatenato ad
+altri chunk per generarne un'altro, anch'esso a sua volta
+concatenabile, che rappresenti i chunk di partenza. Per permettere
+questa concatenazione ogni chunk deve presentare le seguenti
+informazioni:
+
+%3201899105
+
+\begin{itemize}
+
+\item L'indirizzo che deve trovarsi sullo stack al momento
+  dell'esecuzione del'istruzione ret del gadget precedente 
+
+\item In quale posizione del payload inserire l'indirizzo del gadget
+  successivo
+
+\item La dimensione degli indirizzi nell'architettura considerata
+
+\end{itemize}
+
+
+Le classi che modellano i vari tipi di chunk hanno tutti un metodo,
+\lstinline{get_payload}, che restituisce il payload del chunk di
+riferimento (escluso l'indirizzo del gadget stesso). Quando due gadget
+vengono concatenati per generare un chunk più generico (nel metodo
+\lstinline{PayloadChunk.get_general_chunk}), l'indirizzo di ogni chunk
+viene inserito nella posizione indicata dal chunk precedente. Nel
+momento che si richiede il payload vero e proprio (attraverso il
+metodo \lstinline{PayloadChunk.chain}) oltre all'operazione di
+concatenazione viene anche inserito l'indirizzo del primo gadget
+all'inizio del payload.
+
+
+ %TODO spostare in implementazione attuale?
 %% Questo avviene emulando tutti i gadgets, e nello stesso momento
 %% parsando le istruzioni. Si tiene traccia, istruzione per istruzione,
 %% di quanto si sia modificato il valore dello stack. Nel caso si
@@ -590,6 +821,7 @@ oggetti.
 %% scritti. Nel caso vi sia scrittura nella memoria o lettura da una zona
 %% di memoria non riconducibile all'area relativa allo stack il gadget
 %% viene scartato. 
+
 
 %% La semantica potrebbe essere poi verificata trasformando le istruzioni
 %% del gadget in formule smt, verifcando che la semantica e i valori
