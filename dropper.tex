@@ -8,41 +8,41 @@ seconda si farà un'analisi dettagliata dell'attuale implementazione.
 
 L'obiettivo di dropper è quello di generare, analizzando un file
 oggetto eseguibile, una catena di gadget che iniettata nello stack
-dell'eseguibile consenta di prenderne il controllo, eseguendo un
-comando arbitrario sulla macchina. Lo strumento deve poter applicare
-tecniche note per eludere misure di protezioni esistenti come la
-casualizzazione degli indirizzi (\lstinline{ASRL}), l'isolamento delle
-pagine (\lstinline{NX}) o la read-only relocation. Dropper analizza il
-binario utilizzando alcune delle funzionalità del framework per
-l'analisi dei binari \lstinline{BARF}. Il linguaggio utilizzato per la
-scrittura di dropper è python. I file oggetto eseguibili supportati da
-dropper sono ELF32 e ELF64 ed è destinato ad analisi di binari su
-piattaforme GNU/Linux. Dropper, nella sua fase di analisi, estrapola
-dal file binario i gadgets disponibli, per poi estrapolarne la
-semantica. Per questi compiti dropper si avvale sia dell'emulazione
-dei gadget, sia della loro modellizzazione in formule SMT, come
-descritto più in dettaglio nelle prossime sezioni. Una volta
-estrapolata la semantica dei gadget è possibile costruire piccole
-catene di uno o più gadget che consentano di eseguire operazioni
-particolari (come modificare il valore dello stack, chiamare una
-funzione, settare un registro, scrivere in memoria, ecc). Dropper
-assembla queste piccole catene in catene sempre più lunghe che
-eseguono operazioni più complesse e articolate. La generazione di
-queste sequenze avviene, nell'implementazione attuale, in maniera
-programmatica, cioè la procedura per la sua costruzione è codificata
-in un algoritmo. È interessante esplorare metodi di generazione di
-sequenze in maniera dichiarativa, ad esempio utilizzando linguaggi di
-planning come \lstinline{PDDL}\cite{pddl-97}. Una possibile
-modellizzazione è quella in cui per ogni sequenza ``elementare''
-vengono codificate le precondizioni e gli effetti. Viene modellato lo
-stato del sistema (memoria e registri) che si desidera ottenere dopo
-l'esecuzione di una sequenza di gadget. Una volta codificato il
-problema in questi termini si può chiedere ad un planner, come se
-fosse una sorta di oracolo, in che sequenza collegare le varie azioni
-(cioè le varie sequenze elementari di gadget) per ottenere quello
-stato. La rappresentazione delle informazioni sulla semantica dei
-gadget è espressa in questo modo in forma esplicita, e non più
-codificata in un algoritmo.
+dell'immagine del processo associato a quell'eseguibile, consenta di
+prenderne il controllo, eseguendo un comando arbitrario sulla
+macchina. Lo strumento deve poter applicare tecniche note per eludere
+misure di protezioni esistenti come la casualizzazione degli indirizzi
+(\lstinline{ASRL}), l'isolamento delle pagine (\lstinline{NX}) o la
+read-only relocation. Dropper analizza il binario utilizzando alcune
+delle funzionalità del framework per l'analisi dei binari
+\lstinline{BARF}. Il linguaggio utilizzato per la scrittura di dropper
+è python. Dropper supporta file oggetto eseguibili di tipo ELF32 e
+ELF64, architettura intel 8086 e amd 64, su piattaforme
+GNU/Linux. Dropper, nella sua fase di analisi, estrapola dal file
+binario i gadgets disponibli, per poi estrapolarne la semantica. Per
+questi compiti dropper si avvale sia dell'emulazione dei gadget, sia
+della loro modellizzazione in formule SMT, come descritto più in
+dettaglio nelle prossime sezioni. Una volta estrapolata la semantica
+dei gadget è possibile costruire piccole catene di uno o più gadget
+che consentano di eseguire operazioni particolari (come modificare il
+valore dello stack, chiamare una funzione, settare un registro,
+scrivere in memoria, ecc). Dropper assembla queste piccole catene in
+catene sempre più lunghe che eseguono operazioni più complesse e
+articolate. La generazione di queste sequenze avviene,
+nell'implementazione attuale, in maniera programmatica, cioè la
+procedura per la sua costruzione è codificata in un algoritmo. È
+interessante esplorare metodi di generazione di sequenze in maniera
+dichiarativa, ad esempio utilizzando linguaggi di planning come
+\lstinline{PDDL}\cite{pddl-97}. Una possibile modellizzazione è quella
+in cui per ogni sequenza ``elementare'' vengono codificate le
+precondizioni e gli effetti. Viene modellato lo stato del sistema
+(memoria e registri) che si desidera ottenere dopo l'esecuzione di una
+sequenza di gadget. Una volta codificato il problema in questi termini
+si può chiedere ad un planner, come se fosse una sorta di oracolo, in
+che sequenza collegare le varie azioni (cioè le varie sequenze
+elementari di gadget) per ottenere quello stato. La rappresentazione
+delle informazioni sulla semantica dei gadget è espressa in questo
+modo in forma esplicita, e non più codificata in un algoritmo.
 
 Dropper è composto da tre moduli principali:
 
@@ -106,12 +106,12 @@ automaticamente troviamo:
 \end{itemize}
 
 Con tutte queste informazioni il modulo può quindi procedere nello
-stabilire quale strategia utilizzare e richiedere agli altri moduli le
-sequenze di gadget necessarie. Lo schema principale, con alcune varianti
-che analizzeremo in seguito, si può dividere in due fasi: (a)
-preparare gli argomenti per eseguire una chiamata ad una funzione di
-libreria che ci consenta di eseguire un comando arbitrario e (b)
-eseguire quella funzione.
+stabilire quale strategia utilizzare e richiedere al modulo
+gadgetstools le sequenze di gadget necessarie. Lo schema principale,
+con alcune varianti che analizzeremo in seguito, si può dividere in
+due fasi: (a) preparare gli argomenti per eseguire una chiamata ad una
+funzione di libreria che ci consenta di eseguire un comando arbitrario
+e (b) eseguire quella funzione.
 
 Alcune delle strategie che si possono utilizzare per raggiungere il
 primo scopo insieme alle precondizioni necessarie sono elencate di
@@ -149,7 +149,7 @@ seguito:
 
   \end{itemize}
   Solitamente una sequenza del genere consente di scrivere al massimo
-  8 byte per volta in architettura 64bit (4 byte per volta su
+  8 byte per volta in un'architettura 64bit (4 byte per volta su
   un'architettura a 32bit) e sono composte da almeno due gadget
   (almeno un gadget serve per settare i registri utilizzati del gadget
   che esegue la scrittura vera e propria). Questa tecnica tende quindi
@@ -255,7 +255,8 @@ creazione di sequenze di gadget che se eseguite assolvino funzioni
 particolari (come scrivere in memoria, settare un registro,
 ecc.). Questo modulo interagisce con payloadchunk per trasformare
 seguenze ordinate di gadget in un payload vero e proprio da poter
-iniettare sullo stack.
+iniettare sullo stack ed espone i metodi per la creazione delle catene
+che vengono usati dal modulo dropper.
 
 Per la ricerca dei gadget all'interno del file oggetto eseguibile
 viene utilizzata la classe \lstinline{GadgetFinder} del framework
@@ -286,17 +287,18 @@ fasi: (a) emulazione e cataloghizzazione, (b) verifica e validazione e
 La classe \lstinline{GadgetClassifier} emula il gadget tenendo traccia
 delle operazioni sui registri e sulla memoria. Con questi dati si
 verifica se il gadget appartiene ad una o più categorie indicate in
-\cite{schwartz-2011}. %TODO vanno elencate le categorie?  Inoltre
-                      %vengono
-identificati quali registri vengono utilizzati come ``operandi'' della
-funzione alla quale il gadget viene associato. Basandosi su una
-simulazione e non su un effettiva analisi semantica questa
-cataloghizzazione deve essere poi verificata. Per le simulazioni
-vengono utilizzati dati concreti ma una simulazione simbolica,
-funzionalità ancora non disponibile all'interno del framework BARF,
-consentirebbe una cataloghizzazione più veloce e accurata esplicitando
-le relazioni tra i valori che i registri hanno all'inizio e alla fine
-della simulazione
+\cite{schwartz-2011}. 
+%TODO vanno elencate le categorie?  
+Inoltre vengono identificati quali registri vengono utilizzati come
+``operandi'' della funzione alla quale il gadget viene
+associato. Basandosi su una simulazione e non su un effettiva analisi
+semantica questa cataloghizzazione deve essere poi verificata. Per le
+simulazioni vengono utilizzati dati concreti ma una simulazione
+simbolica, funzionalità ancora non disponibile all'interno del
+framework BARF, consentirebbe una cataloghizzazione più veloce e
+accurata esplicitando le relazioni tra i valori che i registri hanno
+all'inizio e alla fine della simulazione o tra i valori iniziali dei
+registri e gli accessi alla memoria.
 
 \subsubsection{Verifica e validazione}
 Si deve poi verificare che, anche se il gadget esegua la funzione
@@ -332,7 +334,7 @@ contesto rispecchi i valori attesi. Questa verifica esclude che ci
 siano effetti secondari che possono interferire con gli effetti della
 nostra funzione. È da notare che queste proprietà sono verificate solo
 per dei valori casuali e dovrebbero essere verificate per tutti i
-valori. Questo non viene fatto sia per questioni di efficenza sia per
+valori. Questo non viene fatto sia per motivi di efficenza sia per
 non includere quantificatori universali nelle formule, complicando di
 molto il lavoro del risolutore e rischiando di ottenere formule non
 decidibili. Questo problema può essere risolto ripetendo queste
@@ -353,20 +355,19 @@ un area di memoria. Per questo motivo per escludere effetti
 secondari di questo tipo il gadget viene emulato con i valori di
 ingresso ricavati al punto 2, e ci si assicura che non vengano lette
 e scritte aree di memoria che non siano quelle relative alla
-funzione propria del gadget o allo stack.
+funzione propria del gadget o all'area dello stack.
 
 
 La linea guida generale appena descritta va adattata alla tipologia di
 gadget analizzata, per le implementazioni specifiche fare riferimento
-alla seconda parte di questo capitolo. Inoltre per poter essere
-utilizzato un gadget, i registri utilizzati come ``operandi'' devono
-essere ``controllabili'', cioè deve esistere una serie di gadget che
-consenta di poter caricare valori arbitrari in questi registri. Per
-questo prima di procedere alla verifica dei gadget si cercano
-all'interno dell'eseguibile tutte le sequenze di gadget che ci
-permettono di controllare registri. Se un gadget utilizza come
-operandi registri che non sono ``controllabili'' questo viene
-scartato.
+alla seconda parte di questo capitolo. Inoltre per poter utilizzare un
+gadget, i registri utilizzati come ``operandi'' devono essere
+``controllabili'', cioè deve esistere una serie di gadget che consenta
+di poter caricare valori arbitrari in questi registri. Per questo
+prima di procedere alla verifica dei gadget si cercano all'interno
+dell'eseguibile tutte le sequenze di gadget che ci permettono di
+controllare registri. Se un gadget utilizza come operandi registri che
+non sono ``controllabili'' questo viene scartato.
 
 Inoltre è da notare come la verifica potrebbe avvenire in modo più
 efficente, utilizzando delle simulazioni mirate a scartare i gadget
@@ -416,7 +417,7 @@ vengono estrapolate dal gadgetstools. La procedura di generazione del
 payload è specifica del tipo di gadget, i metodi
 \lstinline{PayloadChunk.chain} e
 \lstinline{PayloadChunk.get_general_chunk} sono invece generici,
-prendono come argomento una lista di chunk e restiuiscono
+prendono come argomento una lista di chunk e restituiscono
 rispettivamente il payload dei chunk concatenati o un chunk che può
 essere nuovamente concatenato e rappresenta la concatenazione dei
 chunks in ingresso.
@@ -484,7 +485,7 @@ relativo elemento della GOT e di quello nella PLT vengono ricavati per
 ogni funzione utilizzata dal file oggetto eseguibile nel metodo
 \lstinline{get_imports}.
 
-\subsubsection{costruzione della catena}
+\subsubsection{Costruzione della catena}
 
 Attualmente il modulo dropper per prima cosa cerca di scrivere in
 un'area di memoria scrivibile i dati ai quali punteranno gli argomenti
@@ -498,7 +499,7 @@ sulla macchina (nella funzione \lstinline{payload_execve_args}. Se si
 può controllare un file descriptor e \lstinline{read} è presente
 nell'insieme delle funzioni utilizzate dal programma allora dropper
 crea una catena che ritorni all'elemento all'interno della PLT
-relativo \lstinline{read} e fà in modo che vengano letti, dal file
+relativo a \lstinline{read} e fà in modo che vengano letti, dal file
 descriptor indicato, una quantità di dati pari alla dimensione dei
 dati da scrivere e che essi vengano scritti nell'area di memoria
 scelta come area scrivibile. Per far questo viene utilizzato il metoto
@@ -508,12 +509,12 @@ conosce l'indirizzo. È compito poi dell'utente fare in modo che al
 momento della chiamata di questa funzione il file descriptor indicato
 si trovi nello stato giusto a restituire i valori calcolati dal
 modulo. I valori da fornire nel file descriptor vengono forniti
-all'utente nel paramentro \lstinline{fd_payload} di dropper. 
+all'utente nel paramentro \lstinline{fd_payload} di dropper.
 %%TODO
 Esempio?
 
 Attualmente è implementata una seconda strategia nel caso non sia
-presente la funzione read e/o non si controlli nessun file
+presente la funzione \lstinline{read} e/o non si controlli nessun file
 descriptor. Essa consiste nell'utilizzare una serie di gadget che
 possano spostare valori dallo stack in una locazione di memoria
 arbitraria.  Per costruire una catena del genere si chiama la funzione
@@ -544,7 +545,7 @@ all'indirizzo calcolato (\emph{got dereferencing}). È anche possibile,
 se l'eseguibile non è compilato con RORELOC, modificare il valore
 della GOT in loco, aggiungendo l'offset necessario (\emph{got
   patching}). Attualmente è implementata solo la seconda strategia. Il
-modulo gadgets tools offre il metodo \lstinline{buil_memory_write} che
+modulo gadgets tools espone il metodo \lstinline{build_memory_write} che
 si occupa dei dettagli implementativi di questo tipo di catena. Viene
 chiamato da dropper con i seguenti parametri:
 
@@ -553,7 +554,7 @@ chiamato da dropper con i seguenti parametri:
     dell'elemento della GOT da ``patchare''
 
   \item il valore da aggiungere: l'offset relativo tra la funzione
-    utilizzata come base e la voluta
+    utilizzata come base e quella voluta
 
   \item il valore di base: l'offset che la funzione di base ha
     all'interno del file oggetto condiviso della libreria. Come
