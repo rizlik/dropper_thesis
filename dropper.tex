@@ -19,7 +19,7 @@ delle funzionalità del framework per l'analisi dei binari
 è python. Dropper supporta file oggetto eseguibili di tipo ELF32 e
 ELF64, architettura intel 8086 e amd 64, su piattaforme
 GNU/Linux. Dropper, nella sua fase di analisi, estrapola dal file
-binario i gadgets disponibli, per poi estrapolarne la semantica. Per
+binario i gadgets disponibili, per poi estrapolarne la semantica. Per
 questi compiti dropper si avvale sia dell'emulazione dei gadget, sia
 della loro modellizzazione in formule SMT, come descritto più in
 dettaglio nelle prossime sezioni. Una volta estrapolata la semantica
@@ -55,7 +55,7 @@ Dropper è composto da tre moduli principali:
     scegliere le tecniche da utilizzare per riuscire a generare la
     catena
 
-  \item gadgetstools: È il modulo che si occupa del'estrapolazione,
+  \item gadgetstools: È il modulo che si occupa dell'estrapolazione,
     dell'analisi, della scelta e dell'assemblaggio dei gadget da utilizzare nella
     composizione della catena e dei vari sui frammenti
 
@@ -70,7 +70,7 @@ Dropper è composto da tre moduli principali:
 
 È il modulo che si occupa di leggere il file binario, interagire con
 l'utente, scegliere le varie strategie da adottare e di coordinare le
-azioni degli altri moduli. Il modulo legge il file e instanzia un
+azioni degli altri moduli. Il modulo legge il file e istanzia un
 oggetto di tipo gadgets tools che si occuperà di estrapolare i gadgets
 dal binario e analizzarli. Per il parsing delle strutture dati
 presenti nell'elf dropper utilizza la libreria
@@ -188,8 +188,8 @@ e fissa all'interno della memoria dell'immagine del processo. Nel caso
 invece che la funzione non venga utilizzata un'alternativa è quella di
 adoperare tecniche per ricavare l'indirizzo della funzione partendo
 dall'indirizzo di un'altra funzione della stessa libreria che invece
-viene utilizzata dal programma. Questo funziona perchè nonostante
-l'indirizzo inziale al quale una libreria viene caricata sia
+viene utilizzata dal programma. Questo funziona perché nonostante
+l'indirizzo iniziale al quale una libreria viene caricata sia
 casualizzato, gli offset tra le funzioni non cambiano. Alcune
 considerazioni sull'utilizzo di questa tecnica:
 
@@ -208,7 +208,7 @@ considerazioni sull'utilizzo di questa tecnica:
     dove è memorizzato l'indirizzo della funzione usata come
     riferimento, solitamente nella GOT). Molto spesso però abbiamo
     gadget che ci consentono di addizionare solo un byte per
-    volta. Questo è un problema perchè in un'operazione di somma byte
+    volta. Questo è un problema perché in un'operazione di somma byte
     per byte dev'essere considerato un eventuale valore di riporto tra
     un byte e il successivo. Questo può essere risolto se il tipo di
     gadget trovato usa un'istruzione di tipo \lstinline{adc} (add with
@@ -236,7 +236,7 @@ considerazioni sull'utilizzo di questa tecnica:
 \end{itemize}
 
 È interessante notare come, anche se vi è una guida nelle operazioni
-da seguire basata sulla strategia scelta, la seguenza di operazioni
+da seguire basata sulla strategia scelta, la sequenza di operazioni
 che conducono allo stato del sistema desiderato sono molteplici. Ad
 esempio l'operazione aritmetica per il calcolo dell'indirizzo della
 funzione bersaglio potrebbe avvenire in memoria, oppure tra due
@@ -251,10 +251,10 @@ dimostrare e che è molto più soggetta ad errori.
 
 Il modulo gadgets tools si occupa di ricavare i gadgets presenti nel
 file oggetto eseguibile, di estrapolarne la semantica e della
-creazione di sequenze di gadget che se eseguite assolvino funzioni
+creazione di sequenze di gadget che se eseguite assolvono funzioni
 particolari (come scrivere in memoria, settare un registro,
 ecc.). Questo modulo interagisce con payloadchunk per trasformare
-seguenze ordinate di gadget in un payload vero e proprio da poter
+sequenze ordinate di gadget in un payload vero e proprio da poter
 iniettare sullo stack ed espone i metodi per la creazione delle catene
 che vengono usati dal modulo dropper.
 
@@ -273,9 +273,9 @@ semplificando, è rappresentato dalla memoria e dai registri. Per
 questo tipo di analisi si utilizzano due strumenti principali: la
 simulazione e la traduzione delle istruzioni in formule
 SMT. Un'analisi completa della semantica presenta alcuni limiti dovuti
-alla difficoltà di una modellizzazione completa del sistema nonchè
+alla difficoltà di una modellizzazione completa del sistema nonché
 alla conoscenza parziale del contesto (memoria e registri) reale in
-cui si troveranno ad essere esguite le istruzioni. Ad esempio
+cui si troveranno ad essere eseguite le istruzioni. Ad esempio
 utilizzando l'attuale traduzione delle istruzioni in formule SMT, è
 difficile porre al risolutore domande che riguardino il numero di
 letture effettuate, o domandare se un'area di memoria viene mai
@@ -334,7 +334,7 @@ contesto rispecchi i valori attesi. Questa verifica esclude che ci
 siano effetti secondari che possono interferire con gli effetti della
 nostra funzione. È da notare che queste proprietà sono verificate solo
 per dei valori casuali e dovrebbero essere verificate per tutti i
-valori. Questo non viene fatto sia per motivi di efficenza sia per
+valori. Questo non viene fatto sia per motivi di efficienza sia per
 non includere quantificatori universali nelle formule, complicando di
 molto il lavoro del risolutore e rischiando di ottenere formule non
 decidibili. Questo problema può essere risolto ripetendo queste
@@ -370,9 +370,9 @@ controllare registri. Se un gadget utilizza come operandi registri che
 non sono ``controllabili'' questo viene scartato.
 
 Inoltre è da notare come la verifica potrebbe avvenire in modo più
-efficente, utilizzando delle simulazioni mirate a scartare i gadget
+efficiente, utilizzando delle simulazioni mirate a scartare i gadget
 che sicuramente non ci consentono di utilizzare valori arbitrari. In
-questa fase dello sviluppo del progetto però l'efficenza non viene
+questa fase dello sviluppo del progetto però l'efficienza non viene
 considerata come prioritaria.  Durante queste le fasi di
 classificazione e verifica vengono anche raccolte informazioni
 aggiuntive sui gadget, come di come un gadget modifica il valore del
@@ -425,7 +425,7 @@ chunks in ingresso.
 
 \section{Implementazione attuale}
 
-\subsection{dropper}
+\subsection{Dropper}
 
 \subsubsection{Interazione con l'utente}
 
@@ -440,19 +440,19 @@ catena vera e propria. Anche se queste sono le uniche chiamate
 essenziali l'utente ha a disposizione ulteriori funzioni:
 \begin{itemize}
 
-\item \lstinline{set_can_control_fd} setta il filedescriptor
+\item \lstinline{set_can_control_fd} setta il file descriptor
   controllato dall'utente (-1 se nessun file descriptor può essere
   controllato)
 
 \item \lstinline{set_function_for_address_resolving} indica la
   funzione di riferimento da utilizzare nell'applicazione di tecniche
   che ricavino l'indirizzo di funzioni casualizzate in memoria
-  partendo da valori nella GOT table. Questa funzione dev'essere già
-  stata richiamata almeno una volta al momento dell'esecuzione della
-  catena
+  partendo da valori nella GOT table. La funzione indicata dev'essere
+  già stata richiamata almeno una volta al momento dell'esecuzione
+  della catena
 
-\item \lstinline{set_writeable_area} setta l'indirizzo nel quale
-  provare a scrivere gli argomenti per la funzione da richiamare. Di
+\item \lstinline{set_writeable_area} setta l'indirizzo di inizio
+  dell'area di memoria dove effettuare operazioni di scrittura. Di
   default questo valore è settato all'indirizzo di caricamento in
   memoria della sezione \lstinline{.data}
 
@@ -463,15 +463,15 @@ essenziali l'utente ha a disposizione ulteriori funzioni:
 
 Quando il file eseguibile è stato analizzato e le informazioni
 necessarie impostate il metodo \lstinline{build_spawn_shell_payload}
-cerca di generare una catena che avvi il comando impostato.
+cerca di generare una catena che avvii il comando impostato.
 
 \subsubsection{Analisi degli import}
 
-Se una funzione viene utilizzata dal programma, anche se il suo
-indirizzo reale viene casualizzato, sarà presente un elemento relativo
-a quella funzione all'interno della procedure linkage table. Questo
-elemento, ammesso che il binario non sia stato compilato come
-indipendente dalla posizione in memoria (PIE), ha una posizione
+Se una funzione esterna viene utilizzata dal programma, anche se il
+suo indirizzo reale viene casualizzato, sarà presente un elemento
+relativo a quella funzione all'interno della procedure linkage
+table. Questo elemento, ammesso che il binario non sia stato compilato
+come indipendente dalla posizione in memoria (PIE), ha una posizione
 nota. Possiamo quindi ritornare al suo indirizzo per emulare la
 chiamata a quella funzione (return-to-plt). Nella GOT invece ogni
 elemento inizialmente, e quindi anche staticamente nel file, contiene
@@ -492,24 +492,23 @@ un'area di memoria scrivibile i dati ai quali punteranno gli argomenti
 dell'invocazione della funzione \lstinline{execve}. Nel caso
 quest'area di memoria non viene specificata dall'utente viene
 utilizzato l'indirizzo di caricamento in memoria della sezione
-\lstinline{.data}, visto che viene caricata in un'area di memoria
-marcata come scrivibile. Gli argomenti e i dati veri e propri vengono
-creati dal modulo partendo dal comando che si è deciso di eseguire
-sulla macchina (nella funzione \lstinline{payload_execve_args}. Se si
-può controllare un file descriptor e \lstinline{read} è presente
+\lstinline{.data}. Gli argomenti e i dati veri e propri vengono creati
+dal modulo partendo dal comando che si è deciso di eseguire sulla
+macchina (nella funzione \lstinline{payload_execve_args}). Se si può
+controllare un file descriptor e \lstinline{read} è presente
 nell'insieme delle funzioni utilizzate dal programma allora dropper
 crea una catena che ritorni all'elemento all'interno della PLT
-relativo a \lstinline{read} e fà in modo che vengano letti, dal file
+relativo a \lstinline{read} e fa in modo che vengano letti, dal file
 descriptor indicato, una quantità di dati pari alla dimensione dei
 dati da scrivere e che essi vengano scritti nell'area di memoria
-scelta come area scrivibile. Per far questo viene utilizzato il metoto
+scelta come area scrivibile. Per far questo viene utilizzato il metodo
 \lstinline{get_ret_func_chunk} del modulo gadgets tool il quale ci
 consente di creare una catena che richiami una funzione di cui si
 conosce l'indirizzo. È compito poi dell'utente fare in modo che al
 momento della chiamata di questa funzione il file descriptor indicato
 si trovi nello stato giusto a restituire i valori calcolati dal
 modulo. I valori da fornire nel file descriptor vengono forniti
-all'utente nel paramentro \lstinline{fd_payload} di dropper.
+all'utente nel parametro \lstinline{fd_payload} di dropper.
 %%TODO
 Esempio?
 
@@ -520,7 +519,7 @@ possano spostare valori dallo stack in una locazione di memoria
 arbitraria.  Per costruire una catena del genere si chiama la funzione
 \lstinline{build_memory_write} del modulo gadgets tools che prende
 come argomenti l'indirizzo della memoria dove scrivere e i dati da
-scrivere. Solitamente, come vedremo in \ref{build_memory_write}, le
+scrivere. Solitamente, come vedremo in \ref{sec:memorystore}, le
 catene generate in questo modo tendono ad essere piuttosto lunghe.
 
 %%TODO inserire strategie non implementate?
@@ -560,11 +559,13 @@ chiamato da dropper con i seguenti parametri:
     all'interno del file oggetto condiviso della libreria. Come
     vedremo questo rende possibile utilizzare la tecnica anche quando
     le tipologie di gadget disponibili non sono ideali al prezzo di
-    sacrificare un'affidabilità del 100\% (vedi sez. \ref{adc})
+    sacrificare un'affidabilità del 100\% (vedi
+    sez. \ref{sec:arithmeticstore})
+
 \end{itemize}
 
 La classe inoltre contiene alcuni metodi per il salvataggio dei dati
-relativi ai gadgets su disco, questo perchè l'analisi di eseguibili
+relativi ai gadgets su disco, questo perché l'analisi di eseguibili
 molto grandi può durare diversi minuti. Al loro interno questi metodi
 utilizzano la libreria \lstinline{pickle} per la serializzazione degli
 oggetti.
@@ -580,28 +581,28 @@ utilizzare un gadget è poter controllare i registri coinvolti nelle
 sue operazioni, per questo motivo la prima analisi che viene condotta
 una volta ottenuta la lista dei gadget è la selezione di quelli che ci
 consentono di controllare i registri. La ricerca dei gadget viene
-effettuata in tutte le sezioni che vengono caricate in memoria (tipo
-\lstinline{SHT_PROGBITS}) e marcate come eseguibili.
+effettuata in tutte le sezioni che vengono caricate in memoria
+(discriminate dal tipo \lstinline{SHT_PROGBITS}) e marcate come
+eseguibili.
 
 \subsubsection{Selezione dei gadget per l'impostazione dei registri}
 
 La logica e le strutture dati utilizzate per la selezione e la
-gestione dei gadget per l'impostazione dei registri è contenuta nella
-classe \lstinline{RegSet}. Il metodo \lstinline{_analyze_gadget}
-riceve come argomento in ingresso un gadget e, nel caso esso possa
-essere utilizzato per l'impostazione di registri, viene aggiunto nelle
-strutture dati interne alla classe. La classe espone il metodo
-\lstinline{get_chunk} che riceve come argomento un dizionario, le cui
-chiavi e valori rappresentano rispettivamente i nomi dei registri e i
-valori ai quali si desidera impostarli e restituisce la catena che li
-imposta a quei valori. Attualmente solo gadget che contengono
-istruzioni di tipo \lstinline{pop reg} vengono considerati come
-potenziali candidati per l'impostazione di registri. L'analisi avviene
-tramite la simulazione istruzione per istruzione. Se l'istruzione
-attuale è del tipo \lstinline{pop reg} allora si memorizza il nome del
-registro e l'offset tra il valore attuale dello stack e quello
-all'inizio della simulazione. Questo ci consente di conoscere dove
-posizionare il valore da impostare nel registro al momento della
+gestione dei gadget utilizzati per l'impostazione dei registri è
+contenuta nella classe \lstinline{RegSet}. Il metodo
+\lstinline{_analyze_gadget} riceve come argomento in ingresso un
+gadget e, nel caso esso possa essere utilizzato per l'impostazione di
+registri, viene aggiunto nelle strutture dati interne alla classe. La
+classe espone il metodo \lstinline{get_chunk} che ritorna una catena
+che imposta i registri in modo da riflettere le coppie registro/valore
+del dizionario preso come argomento. Attualmente solo gadget che
+contengono istruzioni di tipo \lstinline{pop reg} vengono considerati
+come potenziali candidati per l'impostazione di registri. L'analisi
+avviene tramite la simulazione istruzione per istruzione. Se
+l'istruzione attuale è di tipo \lstinline{pop reg} allora si memorizza
+il nome del registro e l'offset tra il valore attuale dello stack e
+quello all'inizio della simulazione. Questo ci consente di conoscere
+dove posizionare il valore da impostare nel registro al momento della
 generazione del payload. Durante la simulazione si controlla anche che
 le istruzioni che non sono del tipo \lstinline{pop reg} non eseguano
 operazioni di lettura o scrittura sulla memoria. Questo ci consente di
@@ -619,12 +620,13 @@ necessario inserire nell'utilizzo di ogni gadget per via delle
 operazioni che esso effettua sul registro dello stack. Attualmente per
 trovare la catena viene utilizzato un algoritmo greedy che scorre i
 registri da ``coprire'' e, se il registro non è già coperto da un
-gadget inserito nella catena, sceglie il gadget che lo copra e che
+gadget inserito nella catena, sceglie il gadget che lo copre e che
 necessita del minor padding possibile. Se l'aggiunta di un gadget ne
 rende superfluo uno già presente nei candidati quest'ultimo viene
 rimosso. La soluzione trovata con quest'algoritmo non è ottima.
 
 \subsubsection{Selezione dei gadget per la scrittura in memoria}
+\label{sec:memorystore}
 
 La logica e le strutture dati per gestire i gadget che ci consentono
 di scrivere in memoria si trovano nella classe
@@ -632,16 +634,16 @@ di scrivere in memoria si trovano nella classe
 \lstinline{GadgetClassifier} del framework BARF verifica se a seguito
 di alcune simulazioni un valore presente in un registro (denominato
 sorgente) viene scritto in una locazione di memoria il cui indirizzo
-corrisponde al valore di un registro (denominato destinazione) e un
-eventuale offset. Ogni volta che questa condizione viene verificata il
-gadget viene aggiunto alla categoria StoreMemory. È da notare che la
-condizione di cui sopra potrebbe verificarsi per più coppie di
-registri nello stesso gadget, per oguna di queste viene creato un
-oggetto gadget di tipo StoreMemory e aggiunto alla categoria. La
-classe parte da questi gadget per procedere alla fase di verifica e
-validazione. Inanzitutto se il registro di destinazione è il registro
-dello stack il gadget viene scartato. Questo fa in modo che non
-vengano presi in considerazione i gadget con istruzioni tipo
+corrisponde al valore di un registro (denominato destinazione) sommato
+ad un eventuale offset. Ogni volta che questa condizione viene
+verificata il gadget viene aggiunto alla categoria StoreMemory. È da
+notare che la condizione di cui sopra potrebbe verificarsi per più
+coppie di registri nello stesso gadget, per ognuna di queste viene
+creato un oggetto gadget di tipo StoreMemory e aggiunto alla
+categoria. La classe parte da questi gadget per procedere alla fase di
+verifica e validazione. Innanzitutto se il registro di destinazione è
+il registro dello stack il gadget viene scartato. Questo fa in modo
+che non vengano presi in considerazione i gadget con istruzioni tipo
 \lstinline{push reg}. Questi gadget infatti, solitamente non
 consentono di scrivere in una regione arbitraria della memoria, oltre
 a complicare la gestione dello schema dello stack. Dopo di che vengono
@@ -649,7 +651,7 @@ scartati anche i gadget che hanno come registro di destinazione rip e
 eip. Infatti essendo questo registro fisso rispetto all'istruzione che
 lo esegue neanche questi gadget ci consentono di scrivere in una
 posizione arbitraria di memoria. Dopo di che si procede seguendo le
-linee guidea descritte in \ref{s:verifica_validazione}: il gadget
+linee guida descritte in \ref{s:verifica_validazione}: il gadget
 viene scartato se non si possono controllare i registri sorgente e
 destinazione, si verifica e valida la generalità e ci si assicura che
 il gadget non presenti effetti secondari. I valori scelti casualmente
@@ -657,7 +659,7 @@ per la verifica e la validazione sono la locazione di memoria e il
 valore da scrivere. Nella verifica degli effetti secondari si
 controlla che non ci siano scritture al di fuori della locazione
 scelta e dello stack. Il metodo \lstinline{get_chunk} invece prende
-come argomenti un'indirizzo in memoria e dei valori e restituisce una
+come argomenti un indirizzo in memoria e dei valori e restituisce una
 catena che scrive i valori in memoria partendo da quell'indirizzo. Il
 metodo sceglie uno dei gadget disponibili e calcola quante iterazioni
 sono necessarie per la scrittura dei valori. Per ogni iterazione poi
@@ -667,12 +669,12 @@ classe \lstinline{regset} per ottenere una catena che setti i registri
 a quei valori, e la si concatena a sua volta al gadget che si sta
 utilizzando per scrivere in memoria. Viene restituita la
 concatenazione delle catene create per ogni iterazione, che
-verosimilimente scriverà in memoria, partendo dall'indirizzo indicato
-i valori in ingresso. L'implementazione attuale di questa funzione è
-riportata nel listato \ref{cod:memstr.get_chunk}
+verosimilmente scriverà in memoria, partendo dall'indirizzo indicato
+i valori in ingresso.
 
 \subsubsection{Selezione dei gadget per la operazioni aritmetiche in
   memoria}
+\label{sec:arithmeticstore}
 
 La logica e le strutture dati per la gestione dei gadget che ci
 consentono di scrivere in memoria risiedono nella classe
@@ -697,10 +699,10 @@ addizione che considerano il valore di riporto (ad esempio adc su
 intel). Questi gadget possono rilevarsi molto utili. Spesso infatti
 sono disponibili solo gadget aritmetici che ci consentono di
 aggiungere un byte per volta. Effettuare un'operazione di got patching
-(vedi sez. \ref{sec:got_patching} un byte per volta senza considerare
-i valori di ritorno tra un byte e il successivo può portare ad un
+(vedi sez. \ref{sec:got_patching}) un byte per volta senza considerare
+i valori di riporto tra un byte e il successivo può portare ad un
 risultato errato dell'operazione che si sta effettuando. Per poter
-permettere la cataloghizzazoine di questo tipo di gadget, si è dovuto
+permettere la cataloghizzazione di questo tipo di gadget, si è dovuto
 applicare una piccola patch al framework per permetterci di poter
 controllare in qualche modo il contesto dei registri che utilizza
 durante le simulazioni per la classificazione. Infatti il
@@ -715,34 +717,34 @@ flag a zero. Questo viene anche imposto nelle verifiche che utilizzano
 un risolutore SMT. In più viene aggiunta una seconda coppia di
 modellazioni SMT con le quali si verifica se il gadget in esame
 utilizza il carry flag nell'operazione e se a seguito di un'operazione
-che sicuramente generi un valore di ritorno, il carry flag al termine
+che sicuramente generi un valore di riporto, il carry flag al termine
 del gadget abbia valore uno. Questo ci dà la certezza rispettivamente
 che il gadget va ad utilizzare il carry flag nelle operazioni di
 addizione e che le operazioni successive all'interno del gadget non
 vadano ad influenzare il carry flag. Come detto sopra, per costruire
 una catena che ci consenta di aggiungere un valore arbitrario ad una
 locazione di memoria arbitraria, bisogna avere a disposizione o gadget
-aritimetici la cui dimensione dell'operazione sia di almeno un byte
-più grande dell'addendo o un gadget che, per l'appunto, consenta di
+aritmetici la cui dimensione dell'operazione sia di almeno un byte più
+grande dell'addendo o un gadget che, per l'appunto, consenta di
 eseguire operazioni utilizzando i valori di ritorno. In questo secondo
-caso però bisogna anche però concatenare, se è disponibile, un gadget
-che abbia come effetto quello di azzerare il carry flag, da inserire
-prima dell'operazione. La logica per la ricerca di questo tipo di
-gadget è presente nella classe \lstinline{ClearCarryFlag}. È da notare
-che se questo tipo di gadget non fosse presente la catena generata
-potrebbe non avere l'esito sperato, tuttavia è presumibile che in
-molti tipi di exploit il carry flag abbia sempre lo stesso valore
-all'inizio dell'esecuzione della catena. La sottrazione quindi di
-un'unità al primo byte dell'offset dovrebbe essere sufficente per
-generare una catena corretta. Se nè un un gadget che consenta di
-aggiungere abbastanza bytes per volta nè un gadget che effettua
-operazioni considerando il valore di riporto sono disponibili è
-tuttavia possibile generare una catena con alte probabilità di
-successo. Infatti l'indirizzo di memoria nel quale viene caricato il
-file oggetto condiviso della libreria, nonstante sia casualizzato,
-dev'essere allineato in memoria al valore specificato nel parametro
-\lstinline{p_align] all'interno del program header. Questo comporta
-che un certo numero di bits meno sigificativi dell'indirizzo di una
+caso però bisogna anche concatenare, se è disponibile, un gadget che
+abbia come effetto quello di azzerare il carry flag, da inserire prima
+dell'operazione. La logica per la ricerca di questo tipo di gadget è
+presente nella classe \lstinline{ClearCarryFlag}. È da notare che se
+questo tipo di gadget non fosse presente la catena generata potrebbe
+non avere l'esito sperato, tuttavia è presumibile che in molti tipi di
+exploit il carry flag abbia sempre lo stesso valore all'inizio
+dell'esecuzione della catena. La sottrazione quindi di un'unità al
+primo byte dell'offset dovrebbe essere sufficiente per generare una
+catena corretta. Se non sono disponibili né un un gadget che consenta
+di aggiungere abbastanza bytes per volta né un gadget che effettua
+operazioni considerando il valore di riporto è tuttavia possibile
+generare una catena con alte probabilità di successo. Infatti
+l'indirizzo di memoria nel quale viene caricato il file oggetto
+condiviso della libreria, nonostante sia casualizzato, dev'essere
+allineato in memoria al valore specificato nel parametro
+\lstinline{p_align} all'interno del program header. Questo comporta
+che un certo numero di bits meno significativi dell'indirizzo di una
 funzione non cambino da un'esecuzione all'altra. Solitamente sono i
 21bits meno significativi, e l'offset tra due funzioni nella libc
 solitamente è tre byte. Questo fa si che si può calcolare il valore di
@@ -750,6 +752,7 @@ riporto per i primi due byte. Solo il valore di riporto dell'ultimo
 byte (di cui conosciamo solo la parte meno significativa) risulterebbe
 casuale, facendo si che si possano generare catene con probabilità di
 successo pari almeno al 50\%.
+
 
 È da notare che nell'implementazione attuale manca ancora
 l'implementazione della logica per la ricerca e la verifica di
@@ -769,7 +772,7 @@ come indirizzi di funzioni più relativi argomenti o a valori da
 trasferire dalla stack ai registri. Ogni classe che si occupa della
 generazione di un particolare tipo di chunk ha le informazioni
 necessarie per permettere al chunk stesso di essere concatenato ad
-altri chunk per generarne un'altro, anch'esso a sua volta
+altri chunk per generarne un altro, anch'esso a sua volta
 concatenabile, che rappresenti i chunk di partenza. Per permettere
 questa concatenazione ogni chunk deve presentare le seguenti
 informazioni:
@@ -779,7 +782,7 @@ informazioni:
 \begin{itemize}
 
 \item L'indirizzo che deve trovarsi sullo stack al momento
-  dell'esecuzione del'istruzione ret del gadget precedente 
+  dell'esecuzione dell'istruzione ret del gadget precedente 
 
 \item In quale posizione del payload inserire l'indirizzo del gadget
   successivo
