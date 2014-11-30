@@ -33,16 +33,14 @@ nell'implementazione attuale, in maniera programmatica, cioè la
 procedura per la sua costruzione è codificata in un algoritmo. È
 interessante esplorare metodi di generazione di sequenze in maniera
 dichiarativa, ad esempio utilizzando linguaggi di planning come
-\lstinline{PDDL}\cite{pddl-97}. Una possibile modellizzazione è quella
-in cui per ogni sequenza ``elementare'' vengono codificate le
-precondizioni e gli effetti. Viene modellato lo stato del sistema
-(memoria e registri) che si desidera ottenere dopo l'esecuzione di una
-sequenza di gadget. Una volta codificato il problema in questi termini
-si può chiedere ad un planner, come se fosse una sorta di oracolo, in
-che sequenza collegare le varie azioni (cioè le varie sequenze
-elementari di gadget) per ottenere quello stato. La rappresentazione
-delle informazioni sulla semantica dei gadget è espressa in questo
-modo in forma esplicita, e non più codificata in un algoritmo.
+\lstinline{PDDL}\cite{pddl-97}. Un primo approccio che utilizza questa
+strategia è descritto nella sezione \ref{sec:pddl}.Una volta
+codificato il problema in questi termini si può chiedere ad un
+planner, come se fosse una sorta di oracolo, in che sequenza collegare
+le varie azioni (cioè le varie sequenze elementari di gadget) per
+ottenere quello stato. La rappresentazione delle informazioni sulla
+semantica dei gadget è espressa in questo modo in forma esplicita, e
+non più codificata in un algoritmo.
 
 Dropper è composto da tre moduli principali:
 
@@ -802,6 +800,181 @@ momento che si richiede il payload vero e proprio (attraverso il
 metodo \lstinline{PayloadChunk.chain}) oltre all'operazione di
 concatenazione viene anche inserito l'indirizzo del primo gadget
 all'inizio del payload.
+
+\subsubsection{Utilizzo di pianificatori per la costruzione della
+  catena}
+\label{sec:pddl}
+
+Il problema di generare una catena (quindi una sequenza) di gadget
+(che possono essere visti come azioni) per arrivare ad uno stato del
+sistema desiderato si traduce naturalmente in un problema di
+planning. Una volta tradotto si può utilizzare un planner per ottenere
+una soluzione valida e/o (dipende dal planner che si utilizza)
+ottima. PDDL è un linguaggio che ha come obiettivo quello di dare uno
+strumento universale per codificare problemi di planning.  In questa
+sezione esamineremo un primo approccio che può essere utilizzato per
+tradurre il nostro problema nel linguaggio PDDL. Il linguaggio divide
+il problema in due descrizioni differenti, una che si occupa di
+definire il dominio del problema, l'altra di definirne una singola
+istanza. Nella definizione del dominio vengono descritti i tipi di
+oggetto che avremo nel nostro sistema, gli oggetti presenti in tutte
+le instanze (\emph{constants}), i \emph{fluents}, e le azioni, insieme
+agli effetti che queste hanno sugli oggetti del dominio. Una singola
+istanza del problema invece definisce gli oggetti che le azioni
+possono manipolare, lo stato iniziale nel quale si trova il sistema,
+lo stato che vogliamo raggiungere e la metrica con la quale valutare
+la bontà di un piano. Un \emph{fluents} è un mapping tra una tupla di
+oggetti e un valore numerico che può cambiare durante un piano. La
+loro sintassi e semantica è stata stabilizzata nel linguaggio in
+\cite{fox-03}. Come evidenziato in \cite{fox-03} i fluents non possono
+essere utilizzati come parametri di azioni perchè queste agiscono su
+oggetti ``fisici'' e quindi i parametri devono appartenere ad insiemi
+finiti (e non ad insiemi infiniti come i numeri). Per ovviare a questa
+limitazione utilizzeremo come stratagemma quello di creare degli
+oggetti di tipo \lstinline{imm} e associando tramite il fluent
+\lstinline{val (?x - imm)} un valore a quel dato oggetto. Questo fà si
+che le azioni possono utilizzare parametri di tipo imm.  
+
+I tipi di dato utilizzati nella modellazione sono \lstinline{imm}, con
+il significato appena spiegato, e \lstinline{register} che rappresenta
+per l'appunto un registro. I fluent utilizzati invece sono:
+
+\begin{itemize}
+\item (val ?x - imm) come appena definito
+\item (reg ?r - register) che rappresenta il valore attuale del
+  registro ?r
+\item (mem ?a - imm) che rappresenta il valore attuale della locazione
+  di memoria ?a
+\end{itemize}
+
+Vengono create tante costanti quante i registri.  Attualmente si è
+proceduto a modellare solo gadget per l'impostazione di registri o la
+scrittura di memoria. È da notare che per lo stratagemma usato tutti i
+valori (indirizzi e valori concreti) che le nostre azioni vanno ad
+utilizzare devono essere esplicitati. Un gadget per l'impostazione di
+un registro viene tradotto in questo modo (a meno dei puntini
+utilizzati per generalizzare la lista dei registri che è possibile
+impostare attraverso il gadget):
+
+\begin{lstlisting}
+  (:action regset_gadget
+	 :parameters (?vreg0 ?vreg1 ... ?vregn - imm)
+	 :precondition (and)
+	 :effect (and
+	 	 (assign (reg reg0) (val ?vreg0))
+	 	 (assign (reg reg1) (val ?vreg1))
+                 ...
+	 	 (assign (reg regn) (val ?vregn))
+		 (increase (stack-length) g.stack_offset)))
+\end{lstlisting}
+
+Come si può notare la traduzione avviene ad un livello d'astrazione
+più alto delle singole istruzioni del gadget, dettagli come la
+posizione dei valori da impostare nello stack, gli effetti secondari,
+vengono gestiti sempre da dropper. La traduzione invece di un gadget
+per la scrittura in memoria è leggermente più complicata:
+
+\begin{lstlisting}
+(:action memstr_gadget
+   :parameters ()
+   :precondition (and)
+   :effect (and 
+            (forall (?a ?v - imm)
+             (when (and (= (val ?a) (reg gadget.destination)) 
+             (= (val ?v) (reg gadget.source)))
+              (assign (mem ?a) (val ?v))))
+            (increase (stack-length) gadget.stack_offset)))
+
+\end{lstlisting}
+
+Questa modellazione poco elegante è dovuta al non poter utilizzare i
+fluents come argomenti per altri fluents.  Una volta tradotto il
+dominio, si crea un'istanza del problema. Si specificano gli oggetti
+che faranno parte dell'istanza del problema, cioè i valori che andremo
+ad utilizzare. Come stato iniziale si impostano i fluents dei registri
+a zero, si assegnano i rispettivi valori ai fluents di tipo (val ?v -
+imm) e si setta anche il fluent \lstinline{stack-length} a zero,
+quest'ultimo viene utilizzato come metrica per valutare la bontà del
+piano trovato. Come stato desiderato si imposta o, nel caso si voglia
+trovare un piano per settare un insieme di registri, che i fluent
+rilevanti di tipo (reg ?r) abbiano i valori desiderati o, nel caso
+invece si voglia trovare un piano per impostare alcune specifiche
+locazioni di memoria, che i fluents del tipo (mem ?a) abbiano il
+valore corrispondente. Un esempio, con la lista dei gadgets accorciata
+per brevità è riportato nelle figure \ref{pddl:domain} e
+\ref{pddl:facts}. L'esempio è generato tramite la classe
+\lstinline{planner}.
+
+
+\begin{lstlisting}
+
+;gadgets: 
+;0x412050 : pop rsi; pop r15; ret
+;0x412052 : pop rdi; ret
+;0x40ea2c : mov dword ptr [rdi], esi; ret
+
+(define (domain dropper )
+(:requirements :typing :fluents :conditional-effects)
+(:types imm register)
+(:constants rax rbx rcx rdx rdi rsi rbp rsp rip r8 r9 r10 r11 r12 r13 r14 r15 - register)
+
+(:functions 
+  (val ?x -imm)
+  (reg ?r - register)
+  (stack-length)
+  (mem ?addres - imm))
+
+(:action regset_412052
+   :parameters (?vrdi - imm)
+   :precondition (and)
+   :effect (and         (assign (reg rdi) (val ?vrdi))
+     (increase (stack-length) 8)))
+
+(:action regset_412050
+   :parameters (?vr15 ?vrsi - imm)
+   :precondition (and)
+   :effect (and         (assign (reg r15) (val ?vr15))
+         (assign (reg rsi) (val ?vrsi))
+     (increase (stack-length) 16)))
+
+(:action memstr_40ea2c
+  :parameters ()
+  :precondition (and)
+  :effect (and (forall (?a ?v -imm) 
+      (when (and (= (val ?a) (reg rdi))
+      (= (val ?v) (reg rsi))) (assign (mem ?a) (val ?v))))
+     (increase (stack-length) 0)))
+)
+
+
+\end{lstlisting}
+\label{pddl:domain}
+
+
+\begin{lstlisting}
+(define (problem memset)
+(:domain dropper)
+(:objects v_32896 v_2 v_33153 v_3 - imm)
+(:init
+(= (val v_32896) 32896)
+(= (val v_33153) 33153)
+(= (val v_2) 2)
+(= (val v_3) 3)
+(= (reg rax) 0)(= (reg rbx) 0)(= (reg rcx) 0)(= (reg rdx) 0)(= (reg rdi) 0)
+(= (reg rsi) 0)(= (reg rbp) 0)(= (reg rsp) 0)(= (reg rip) 0)(= (reg r8) 0)
+(= (reg r9) 0)(= (reg r10) 0)(= (reg r11) 0)(= (reg r12) 0)(= (reg r13) 0)
+(= (reg r14) 0)(= (reg r15) 0)
+(= (mem v_32896) 0)
+(= (mem v_33153) 0)
+(= (stack-length) 0))
+(:goal 
+(and (= (mem v_32896) 2)
+  (= (mem v_33153) 3)))
+(:metric minimize (stack-length))
+)
+\end{lstlisting}
+\label{pddl:facts}
+
 
 
  %TODO spostare in implementazione attuale?
