@@ -1,431 +1,10 @@
-\chapter{dROPper}
+\chapter{Implementazione attuale}
+\label{cap:implementazione}
+In questo capito si farà un'analisi dell'attuale stato di sviluppo di dropper.
 
-La prima parte di questo capitolo descrive l'architettura alla quale
-si sta facendo riferimento per lo sviluppo di dropper mentre nella
-seconda si farà un'analisi dettagliata dell'attuale implementazione.
+\section{Dropper}
 
-\section{Architettura principale}
-
-L'obiettivo di dropper è quello di generare, analizzando un file
-oggetto eseguibile, una catena di gadget che iniettata nello stack
-dell'immagine del processo associato a quell'eseguibile, consenta di
-prenderne il controllo, eseguendo un comando arbitrario sulla
-macchina. Lo strumento deve poter applicare tecniche note per eludere
-misure di protezioni esistenti come la casualizzazione degli indirizzi
-(\lstinline{ASRL}), l'isolamento delle pagine (\lstinline{NX}) o la
-read-only relocation. Dropper analizza il binario utilizzando alcune
-delle funzionalità del framework per l'analisi dei binari
-\lstinline{BARF}. Il linguaggio utilizzato per la scrittura di dropper
-è python. Dropper supporta file oggetto eseguibili di tipo ELF32 e
-ELF64, architettura intel 8086 e amd 64, su piattaforme
-GNU/Linux. Dropper, nella sua fase di analisi, estrapola dal file
-binario i gadgets disponibili, per poi estrapolarne la semantica. Per
-questi compiti dropper si avvale sia dell'emulazione dei gadget, sia
-della loro modellizzazione in formule SMT, come descritto più in
-dettaglio nelle prossime sezioni. Una volta estrapolata la semantica
-dei gadget è possibile costruire piccole catene di uno o più gadget
-che consentano di eseguire operazioni particolari (come modificare il
-valore dello stack, chiamare una funzione, settare un registro,
-scrivere in memoria, ecc). Dropper assembla queste piccole catene in
-catene sempre più lunghe che eseguono operazioni più complesse e
-articolate. La generazione di queste sequenze avviene,
-nell'implementazione attuale, in maniera programmatica, cioè la
-procedura per la sua costruzione è codificata in un algoritmo. È
-interessante esplorare metodi di generazione di sequenze in maniera
-dichiarativa, ad esempio utilizzando linguaggi di planning come
-\lstinline{PDDL}\cite{pddl-97}. Un primo approccio che utilizza questa
-strategia è descritto nella sezione \ref{sec:pddl}.Una volta
-codificato il problema in questi termini si può chiedere ad un
-planner, come se fosse una sorta di oracolo, in che sequenza collegare
-le varie azioni (cioè le varie sequenze elementari di gadget) per
-ottenere quello stato. La rappresentazione delle informazioni sulla
-semantica dei gadget è espressa in questo modo in forma esplicita, e
-non più codificata in un algoritmo.
-
-Dropper è composto da tre moduli principali:
-
-\begin{itemize}
-
-  \item dropper: È il modulo che si occupa di (a) leggere il binario,
-    (b) coordinare le operazioni dei restanti moduli, (c) interagire
-    con l'utente per ottenere informazioni aggiuntive sul binario e/o
-    sullo scenario nel quale dev'essere prodotta la catena e (d)
-    scegliere le tecniche da utilizzare per riuscire a generare la
-    catena
-
-  \item gadgetstools: È il modulo che si occupa dell'estrapolazione,
-    dell'analisi, della scelta e dell'assemblaggio dei gadget da utilizzare nella
-    composizione della catena e dei vari sui frammenti
-
-  \item payloadchunk: È il modulo che si occupa di trasformare una
-    sequenza ordinata di gadget in un payload vero e proprio da
-    iniettare sullo stack, gestendo il posizionamento corretto degli
-    indirizzi e dei valori utilizzati dai vari gadget
-
-\end{itemize}
-
-\subsection{Modulo dropper}
-
-È il modulo che si occupa di leggere il file binario, interagire con
-l'utente, scegliere le varie strategie da adottare e di coordinare le
-azioni degli altri moduli. Il modulo legge il file e istanzia un
-oggetto di tipo gadgets tools che si occuperà di estrapolare i gadgets
-dal binario e analizzarli. Per il parsing delle strutture dati
-presenti nell'elf dropper utilizza la libreria
-\lstinline{pyelftools}\cite{pyelftools}. Combinando le informazioni
-provenienti da queste sezioni dropper ricava la lista delle funzioni
-che il file oggetto eseguibile utilizza e le relative entry nella
-\emph{Procedure Linkage Table} (vedi TODORIF). La presenza di alcune
-funzioni può semplificare molto la generazione della catena, di fatto
-trasformandola in una serie di \emph{return-to-plt}. Dropper analizza
-altre strutture chiave dell'ELF per individuare aree nella memoria
-dell'immagine del processo dove è possibile scrivere. L'utente,
-interagendo con il modulo, fornisce informazioni aggiuntive necessarie
-alla generazione della catena e linee guida sulla strategia da
-utilizzare. Tra le informazioni che il modulo non può ricavare
-automaticamente troviamo:
-
-\begin{itemize}
-  \item La possibilità da parte dell'utente di controllare un file
-    descriptor
-
-  \item I file oggetto condivisi utilizzati dall'eseguibile sulla
-    macchina dove si intende far eseguire la catena (per la
-    ricavazione degli offset da utilizzare nelle tecniche di
-    sovrascrizione della GOT Table vedi TODO)
-
-  \item Eventuali caratteri che non possono comparire all'interno del
-    payload
-
-  \item Eventuali limiti sulla lunghezza dei payload
-
-  \item Il comando da eseguire
-
-\end{itemize}
-
-Con tutte queste informazioni il modulo può quindi procedere nello
-stabilire quale strategia utilizzare e richiedere al modulo
-gadgetstools le sequenze di gadget necessarie. Lo schema principale,
-con alcune varianti che analizzeremo in seguito, si può dividere in
-due fasi: (a) preparare gli argomenti per eseguire una chiamata ad una
-funzione di libreria che ci consenta di eseguire un comando arbitrario
-e (b) eseguire quella funzione.
-
-Alcune delle strategie che si possono utilizzare per raggiungere il
-primo scopo insieme alle precondizioni necessarie sono elencate di
-seguito:
-
-\begin{itemize}
-
-\item  Utilizzo della funzione \lstinline{read}
-
-  Condizioni necessarie: 
-  \begin{itemize}
-   \item Controllo di un file descriptor da parte dell'utente
-   \item Utilizzo da parte del file eseguibile della funzione
-     \lstinline{read} o possibilità di richiamarla attraverso tecniche
-     basate sulla ricavazione degli indirizzi partendo da indirizzi
-     nella \lstinline{GOT} e offset relativi
-  \end{itemize}
-
-  Viene richiamata la funzione \lstinline{read}, impostando gli
-  argomenti in modo che i dati letti dal file descriptor vengano
-  scritti nell'area di memoria voluta
-
-\item Utilizzo di gadget per la scrittura della memoria
-
-  Condizioni necessarie:
-  \begin{itemize}
-
-    \item All'interno del file oggetto eseguibile deve essere presente
-      almeno un gadget in grado di scrivere in memoria un valore
-      arbitrario
-
-    \item I valori da scrivere nella memoria non possono presentare
-      caratteri che non possono essere presenti nel payload, essendo
-      essi stessi scritti nel payload della catena generata
-
-  \end{itemize}
-  Solitamente una sequenza del genere consente di scrivere al massimo
-  8 byte per volta in un'architettura 64bit (4 byte per volta su
-  un'architettura a 32bit) e sono composte da almeno due gadget
-  (almeno un gadget serve per settare i registri utilizzati del gadget
-  che esegue la scrittura vera e propria). Questa tecnica tende quindi
-  a generare catene piuttosto lunghe se la dimensione dei valori da
-  scrivere in memoria è grande
-
-\end{itemize}
-
-Queste appena elencate le uniche due tecniche attualmente implementate,
-strategie alternative potrebbero comprendere:
-
-\begin{itemize}
-
-\item Utilizzo delle funzioni \lstinline{strcpy} o \lstinline{memcpy}
-  per copiare byte presenti in posizioni note all'interno
-  dell'eseguibile nella posizione desiderata
-  \cite{roglia:2009}. Questa tecnica, copiando verosimilmente solo un
-  byte per volta tende anch'essa a generare payload abbastanza lunghi
-
-\item Nel caso un bug renda possibile la conoscenza dell'indirizzo
-  dello stack gli argomenti possono essere scritti direttamente nello
-  stack
-
-\end{itemize}
-
-Una volta scritti gli argomenti per la funzione da richiamare in
-memoria è necessario chiamare la funzione stessa. La funzione deve
-permetterci di eseguire un comando arbitrario. All'interno della
-\lstinline{libc} sono presenti due funzioni con queste
-caratteristiche: \lstinline{execve} e \lstinline{system}. Un ritorno
-diretto alla funzione solitamente non può avvenire, in quanto il
-valore del suo indirizzo in memoria è casualizzato. Tuttavia, se una
-funzione è utilizzata all'interno del programma, basterà ritornare
-alla sua entry nella Program Linkage Table, che ha una posizione nota
-e fissa all'interno della memoria dell'immagine del processo. Nel caso
-invece che la funzione non venga utilizzata un'alternativa è quella di
-adoperare tecniche per ricavare l'indirizzo della funzione partendo
-dall'indirizzo di un'altra funzione della stessa libreria che invece
-viene utilizzata dal programma. Questo funziona perché nonostante
-l'indirizzo iniziale al quale una libreria viene caricata sia
-casualizzato, gli offset tra le funzioni non cambiano. Alcune
-considerazioni sull'utilizzo di questa tecnica:
-
-\begin{itemize}
-
-  \item Devono essere noti gli offset delle funzioni all'interno del
-    file oggetto condiviso della libreria utilizzato sulla macchina
-    bersaglio (anche se, variando in un range relativamente piccolo,
-    non dovrebbe essere impossibile, se le condizioni lo consentono,
-    montare un attacco di tipo forza bruta per ricavarli)
-
-  \item il binario deve presentare una sequenza di gadgets che ci
-    consenta di eseguire un'operazione di somma (o un'operazione che
-    ci consenta si simulare una somma, come una sottrazione) tra un
-    offset di tre/quattro byte e un'area di memoria arbitraria (l'area
-    dove è memorizzato l'indirizzo della funzione usata come
-    riferimento, solitamente nella GOT). Molto spesso però abbiamo
-    gadget che ci consentono di addizionare solo un byte per
-    volta. Questo è un problema perché in un'operazione di somma byte
-    per byte dev'essere considerato un eventuale valore di riporto tra
-    un byte e il successivo. Questo può essere risolto se il tipo di
-    gadget trovato usa un'istruzione di tipo \lstinline{adc} (add with
-    carry), controllando che tra gli effetti secondari degli altri
-    gadgets non venga modificato il carry flag. In realtà anche non
-    avendo a disposizione questo tipo di gadget, per via
-    dell'allineamento in memoria, gli ultimi bit dell'indirizzo di una
-    funzione non variano tra un'esecuzione e la successiva. Con
-    questa parziale conoscenza del valore iniziale si può comunque
-    creare una catena con un alta percentuale di successo come
-    descritto in TODO
-
-  \item Un tipo di attacco di questo tipo può essere mitigato se le
-    rilocazioni vengono impostate come read-only. In questo caso
-    infatti gli indirizzi delle funzioni vengono calcolati tutti al
-    momento di caricamento del programma, e la GOT, una volta
-    modificata opportunamente, viene resa non scrivibile. In questo
-    caso è ancora possibile montare un attacco del genere, ma
-    l'operazione aritmetica non può avvenire direttamente sulla got e
-    non può essere utilizzato un ret-to-plt per saltare all'indirizzo
-    calcolato. Bisogna cioè avere a disposizione i gadget necessari
-    per leggere dalla memoria, effettuare l'operazione aritmetica e
-    eseguire un jmp al nuovo indirizzo calcolato
-
-\end{itemize}
-
-È interessante notare come, anche se vi è una guida nelle operazioni
-da seguire basata sulla strategia scelta, la sequenza di operazioni
-che conducono allo stato del sistema desiderato sono molteplici. Ad
-esempio l'operazione aritmetica per il calcolo dell'indirizzo della
-funzione bersaglio potrebbe avvenire in memoria, oppure tra due
-registri e poi salvata in memoria. Qui si notano i vantaggi che
-potrebbe avere un approccio che modelli la situazione in un problema
-di planning rispetto ad un approccio di tipo programmatico. Infatti,
-con un approccio programmatico, tutte le combinazioni vanno codificate
-nell'algoritmo, una procedura la cui completezza è più difficile da
-dimostrare e che è molto più soggetta ad errori.
-
-\subsection{Modulo gadgetstools}
-
-Il modulo gadgets tools si occupa di ricavare i gadgets presenti nel
-file oggetto eseguibile, di estrapolarne la semantica e della
-creazione di sequenze di gadget che se eseguite assolvono funzioni
-particolari (come scrivere in memoria, settare un registro,
-ecc.). Questo modulo interagisce con payloadchunk per trasformare
-sequenze ordinate di gadget in un payload vero e proprio da poter
-iniettare sullo stack ed espone i metodi per la creazione delle catene
-che vengono usati dal modulo dropper.
-
-Per la ricerca dei gadget all'interno del file oggetto eseguibile
-viene utilizzata la classe \lstinline{GadgetFinder} del framework
-BARF, che implementa al suo interno l'algoritmo galileo\cite{roemer-12}. 
-
-%TODO descrivere galileo ?
-%TODO utilizzare il nostro ?
-
-Una volta disponibile l'insieme dei gadget presenti nel file oggetto
-eseguibile bisogna, per ognuno di essi, estrapolarne la semantica. Per
-estrapolarne la semantica si intende estrapolare in maniera automatica
-gli effetti che una serie di istruzioni hanno sul contesto il quale,
-semplificando, è rappresentato dalla memoria e dai registri. Per
-questo tipo di analisi si utilizzano due strumenti principali: la
-simulazione e la traduzione delle istruzioni in formule
-SMT. Un'analisi completa della semantica presenta alcuni limiti dovuti
-alla difficoltà di una modellizzazione completa del sistema nonché
-alla conoscenza parziale del contesto (memoria e registri) reale in
-cui si troveranno ad essere eseguite le istruzioni. Ad esempio
-utilizzando l'attuale traduzione delle istruzioni in formule SMT, è
-difficile porre al risolutore domande che riguardino il numero di
-letture effettuate, o domandare se un'area di memoria viene mai
-letta. L'estrapolazione della semantica di un gadget avviene in tre
-fasi: (a) emulazione e cataloghizzazione, (b) verifica e validazione e
-(c) verifica degli effetti secondari.
-
-\subsubsection{Emulazione e cataloghizzazione}
-La classe \lstinline{GadgetClassifier} emula il gadget tenendo traccia
-delle operazioni sui registri e sulla memoria. Con questi dati si
-verifica se il gadget appartiene ad una o più categorie indicate in
-\cite{schwartz-2011}. 
-%TODO vanno elencate le categorie?  
-Inoltre vengono identificati quali registri vengono utilizzati come
-``operandi'' della funzione alla quale il gadget viene
-associato. Basandosi su una simulazione e non su un effettiva analisi
-semantica questa cataloghizzazione deve essere poi verificata. Per le
-simulazioni vengono utilizzati dati concreti ma una simulazione
-simbolica, funzionalità ancora non disponibile all'interno del
-framework BARF, consentirebbe una cataloghizzazione più veloce e
-accurata esplicitando le relazioni tra i valori che i registri hanno
-all'inizio e alla fine della simulazione o tra i valori iniziali dei
-registri e gli accessi alla memoria.
-
-\subsubsection{Verifica e validazione}\label{s:verifica_validazione}
-Si deve poi verificare che, anche se il gadget esegua la funzione
-della categoria alla quale viene assegnato, possa essere utilizzato
-per i valori di tutto il ``dominio'' di questa funzione, cioè che non
-ci siano restrizioni sugli operandi del gadget. Per esempio, un gadget
-catalogato come \lstinline{MemoryStore} ma che utilizzi lo stesso
-registro come operando di destinazione e operando sorgente non può
-essere utilizzato per scrivere in una locazione arbitraria di memoria
-un valore arbitrario. Per questa verifica si scelgono casualmente gli
-effetti che deve avere la funzione sul contesto. Ad esempio se stiamo
-verificando un \lstinline{MemoryStore} si sceglie sia una locazione
-casuale di memoria sia un valore casuale da scrivere in questa
-locazione. Si traduce il gadget in formule SMT e si impone che il
-contesto finale rifletta gli effetti, scelti casualmente, che la
-nostra funzione deve avere. Nel nostro esempio si impone che la
-locazione di memoria cambi al valore casuale scelto. Si chiede a
-questo punto al risolutore se il sistema di formule ammette una
-soluzione. Se il sistema non ammette soluzione il gadget può essere
-scartato, in quanto non essendo usabile per quei valori perde la sua
-generalità. Nel caso invece il sistema ammetta soluzione vengono
-richiesti al risolutore i valori iniziali, all'interno del modello
-trovato, dei registri che, secondo la cataloghizzazione al punto uno,
-sono gli ``operandi'' della funzione. Si impongono poi al risolutore
-nuovamente le formule SMT che rappresentano il gadget.  Questa volta
-si impongono però come valori iniziali per i registri operandi i
-valori ottenuti dalla prima verifica e, inoltre, che il valore finale
-sia diverso da quello aspettato. La non soddisfacibilità di questa
-formula ci dà la certezza che in tutti i modelli che soddisfano la
-semantica del gadget, che hanno come valori iniziali dei registri
-``operandi'' quelli ottenuti dalla prima verifica, lo stato finale del
-contesto rispecchi i valori attesi. Questa verifica esclude che ci
-siano effetti secondari che possono interferire con gli effetti della
-nostra funzione. È da notare che queste proprietà sono verificate solo
-per dei valori casuali e dovrebbero essere verificate per tutti i
-valori. Questo non viene fatto sia per motivi di efficienza sia per
-non includere quantificatori universali nelle formule, complicando di
-molto il lavoro del risolutore e rischiando di ottenere formule non
-decidibili. Questo problema può essere risolto ripetendo queste
-verifiche al momento dell'utilizzo reale del gadget con i valori
-concretamente utilizzati.
-
-\subsubsection{Verifica degli effetti secondari}  
-
-Il punto precedente ci assicura che un gadget non abbia effetti
-secondari che interferiscano con gli effetti della nostra
-funzione. Tuttavia è possibile che il gadget in esame abbia altri
-effetti secondari che non lo rendano utilizzabile. Ad esempio se il
-gadget legge da una locazione di memoria non leggibile causerà
-l'arresto del programma. La modellizzazione in SMT utilizzata
-attualmente nel framework BARF non consente di porre al risolutore
-domande sul numero di letture in memoria o sulla lettura o meno di
-un area di memoria. Per questo motivo per escludere effetti
-secondari di questo tipo il gadget viene emulato con i valori di
-ingresso ricavati al punto 2, e ci si assicura che non vengano lette
-e scritte aree di memoria che non siano quelle relative alla
-funzione propria del gadget o all'area dello stack.
-
-
-La linea guida generale appena descritta va adattata alla tipologia di
-gadget analizzata, per le implementazioni specifiche fare riferimento
-alla seconda parte di questo capitolo. Inoltre per poter utilizzare un
-gadget, i registri utilizzati come ``operandi'' devono essere
-``controllabili'', cioè deve esistere una serie di gadget che consenta
-di poter caricare valori arbitrari in questi registri. Per questo
-prima di procedere alla verifica dei gadget si cercano all'interno
-dell'eseguibile tutte le sequenze di gadget che ci permettono di
-controllare registri. Se un gadget utilizza come operandi registri che
-non sono ``controllabili'' questo viene scartato.
-
-Inoltre è da notare come la verifica potrebbe avvenire in modo più
-efficiente, utilizzando delle simulazioni mirate a scartare i gadget
-che sicuramente non ci consentono di utilizzare valori arbitrari. In
-questa fase dello sviluppo del progetto però l'efficienza non viene
-considerata come prioritaria.  Durante queste le fasi di
-classificazione e verifica vengono anche raccolte informazioni
-aggiuntive sui gadget, come di come un gadget modifica il valore del
-registro dello stack e la posizione dello stack dove inserire i valori
-utilizzati dal gadget. Queste informazioni vengono utilizzate dal
-modulo \lstinline{PayloadChunk} per costruire il payload vero e proprio.
-
-
-Per le simulazioni viene utilizzata la classe \lstinline{ReilEmulator}
-e la traduzione in formule smt avviene attraverso la classe
-\lstinline{CodeAnalyzer}, entrambe del framework BARF.
-
-
-\subsection{Payload Chunk}
-
-Questo modulo si occupa di generare il payload vero e proprio partendo
-dai gadget analizzati dal modulo gadgetstools. Questa classe è
-strutturata in modo che i diversi chunk prodotti siano concatenabili,
-e che la loro concatenazione dia a sua una volta un frammento
-concatenabile. Questo ci consente di associare ad una data funzione un
-payload e utilizzarlo in diverse parti del programma senza dover più
-conoscerne i dettagli. Ci sono diverse cose da tenere in conto quando
-si costruisce il payload partendo dai gadgets, quasi tutte legate alla
-manipolazione dello stack da parte del gadget stesso:
-
-\begin{itemize}
-
-  \item posizioni dei valori utilizzati dal gadget in relazione alla
-    valore puntato dallo stack al momento della sua esecuzione
-
-  \item valore al quale punterà lo stack al momento dell'esecuzione
-    dell'istruzione ret del gadget stesso. In base alla tipologia di
-    gadget questo valore potrebbe non essere alla fine del payload
-    relativo al gadget stesso
-    
-  \item valore finale dello stack dopo l'esecuzione del gadget
-
-\end{itemize}
-
-Le informazioni relative alle tre problematiche descritte sopra
-vengono estrapolate dal gadgetstools. La procedura di generazione del
-payload è specifica del tipo di gadget, i metodi
-\lstinline{PayloadChunk.chain} e
-\lstinline{PayloadChunk.get_general_chunk} sono invece generici,
-prendono come argomento una lista di chunk e restituiscono
-rispettivamente il payload dei chunk concatenati o un chunk che può
-essere nuovamente concatenato e rappresenta la concatenazione dei
-chunks in ingresso.
-
-
-\section{Implementazione attuale}
-
-\subsection{Dropper}
-
-\subsubsection{Interazione con l'utente}
+\subsection{Interazione con l'utente}
 
 Attualmente dropper si interfaccia all'utente tramite alcune funzioni
 della classe \lstinline{dropper}. Il costruttore di questa classe
@@ -463,7 +42,7 @@ Quando il file eseguibile è stato analizzato e le informazioni
 necessarie impostate il metodo \lstinline{build_spawn_shell_payload}
 cerca di generare una catena che avvii il comando impostato.
 
-\subsubsection{Analisi degli import}
+\subsection{Analisi degli import}
 
 Se una funzione esterna viene utilizzata dal programma, anche se il
 suo indirizzo reale viene casualizzato, sarà presente un elemento
@@ -483,7 +62,7 @@ relativo elemento della GOT e di quello nella PLT vengono ricavati per
 ogni funzione utilizzata dal file oggetto eseguibile nel metodo
 \lstinline{get_imports}.
 
-\subsubsection{Costruzione della catena}
+\subsection{Costruzione della catena}
 
 Attualmente il modulo dropper per prima cosa cerca di scrivere in
 un'area di memoria scrivibile i dati ai quali punteranno gli argomenti
@@ -568,7 +147,7 @@ molto grandi può durare diversi minuti. Al loro interno questi metodi
 utilizzano la libreria \lstinline{pickle} per la serializzazione degli
 oggetti.
 
-\subsection{GadgetsTools}
+\section{GadgetsTools}
 
 Questo modulo estrapola e cataloga i gadget presenti nel binario in
 esame ed espone i metodi di creazione delle catene per l'esecuzione di
@@ -583,7 +162,7 @@ effettuata in tutte le sezioni che vengono caricate in memoria
 (discriminate dal tipo \lstinline{SHT_PROGBITS}) e marcate come
 eseguibili.
 
-\subsubsection{Selezione dei gadget per l'impostazione dei registri}
+\subsection{Selezione dei gadget per l'impostazione dei registri}
 
 La logica e le strutture dati utilizzate per la selezione e la
 gestione dei gadget utilizzati per l'impostazione dei registri è
@@ -623,7 +202,7 @@ necessita del minor padding possibile. Se l'aggiunta di un gadget ne
 rende superfluo uno già presente nei candidati quest'ultimo viene
 rimosso. La soluzione trovata con quest'algoritmo non è ottima.
 
-\subsubsection{Selezione dei gadget per la scrittura in memoria}
+\subsection{Selezione dei gadget per la scrittura in memoria}
 \label{sec:memorystore}
 
 La logica e le strutture dati per gestire i gadget che ci consentono
@@ -670,7 +249,7 @@ concatenazione delle catene create per ogni iterazione, che
 verosimilmente scriverà in memoria, partendo dall'indirizzo indicato
 i valori in ingresso.
 
-\subsubsection{Selezione dei gadget per la operazioni aritmetiche in
+\subsection{Selezione dei gadget per la operazioni aritmetiche in
   memoria}
 \label{sec:arithmeticstore}
 
@@ -759,7 +338,7 @@ Arithmetic). L'implementazione di queste categorie dovrebbe consentire
 la generazione di catene in condizioni più articolate o quando le
 categorie di gadget attualmente implementate non sono disponibili.
 
-\subsection{PayloadChunks}
+\section{PayloadChunks}
 
 Questo modulo si occupa di generare a partire da una lista ordinata di
 uno o più gadgets un array binario di dati da iniettare nello stack
@@ -801,7 +380,7 @@ metodo \lstinline{PayloadChunk.chain}) oltre all'operazione di
 concatenazione viene anche inserito l'indirizzo del primo gadget
 all'inizio del payload.
 
-\subsubsection{Utilizzo di pianificatori per la costruzione della
+\section{Utilizzo di pianificatori per la costruzione della
   catena}
 \label{sec:pddl}
 
