@@ -455,15 +455,13 @@ per la scrittura in memoria è leggermente più complicata:
 
 \begin{lstlisting}
 (:action memstr_gadget
-   :parameters ()
-   :precondition (and)
-   :effect (and 
-            (forall (?a ?v - imm)
-             (when (and (= (val ?a) (reg gadget.destination)) 
-             (= (val ?v) (reg gadget.source)))
-              (assign (mem ?a) (val ?v))))
-            (increase (stack-length) gadget.stack_offset)))
-
+  :parameters ()
+  :precondition (and)
+  :effect (and 
+           (forall (?a -imm) 
+             (when (= (val ?a) (reg rdi))
+              (assign (mem ?a) (reg rsi))))
+          (increase (stack-length) 0)))
 \end{lstlisting}
 
 Questa modellazione poco elegante è dovuta al non poter utilizzare i

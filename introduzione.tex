@@ -36,10 +36,10 @@ lui stesso iniettato.
 Sono state introdotte diverse misure di protezione per mitigare questo
 tipo di attacco. Con l'introduzione dell'isolamento delle pagine di
 memoria è stato possibile adottare una politica dei permessi in
-memoria con granulità una singola pagina. Il tentativo di eseguire
-delle istruzioni presenti in una pagina non eseguible, così come il
+memoria con granularità una singola pagina. Il tentativo di eseguire
+delle istruzioni presenti in una pagina non eseguibile, così come il
 tentativo di scrivere su una pagina non scrivibile causa l'arresto del
-programma. Il codice leggittimo viene mappato in memoria in pagine
+programma. Il codice legittimo viene mappato in memoria in pagine
 eseguibili ma non scrivibili, mentre stack e dati che il programma
 deve manipolare vengono mappati su pagine scrivibili ma non
 eseguibili. In questo modo non si può più semplicemente iniettare del
@@ -52,7 +52,7 @@ effettivamente risiede, non si sa dove dover redirezionare il
 controllo del flusso per eseguire il codice iniettato.
 
 Tuttavia l'isolamento delle pagine di memoria e la casualizzazione
-dello stack non evita la compromissione nè del flusso del programma nè
+dello stack non evita la compromissione né del flusso del programma né
 dello schema dello stack. Una delle tecniche utilizzata per ottenere
 il controllo di un programma nonostante lo stack non sia marcato come
 eseguibile si chiama \emph{return-to-libc}\cite{c0ntex}. In un
@@ -65,13 +65,13 @@ sullo stack. Dato che anche lo schema dello stack può essere
 compromesso l'attaccante ha di fatto il controllo degli argomenti da
 passare alla funzione. Potendo, ad esempio, richiamare la funzione
 \lstinline{system} della libc con argomenti arbitrari è possibile
-eseguire un qualiasi comando sulla macchina in cui si sta eseguendo il
+eseguire un qualsiasi comando sulla macchina in cui si sta eseguendo il
 programma, oppure chiamando la funzione \lstinline{mprotect} (sempre
 nella libc) con gli opportuni argomenti si possono modificare i
 permessi della pagina di memoria dove risiede lo stack, rendendola
 eseguibile. A quel punto redirezionare il flusso del programma sul
 codice iniettato sullo stack non ne provocherà l'arresto. La tecnica
-funziona perchè il codice ad essere eseguito risiede in un area di
+funziona perché il codice ad essere eseguito risiede in un area di
 memoria eseguibile. Una tecnica per mitigare questo tipo di attacco è
 la casualizzazione dello spazio degli indirizzi (\emph{Address Space
   Layout Randomization}). Le librerie vengono mappate ad indirizzi di
@@ -89,10 +89,10 @@ l'attacco.
 Una generalizzazione della return-to-libc è la tecnica che prende il
 nome di \emph{Return Oriented
   Programming}\cite{Shacham-2007,Roemer-2012}. In questo caso il
-flusso viene redirezionato non più all'inzio di una funzione, ma
+flusso viene redirezionato non più all'inizio di una funzione, ma
 all'inizio di una piccola serie di istruzioni, già presenti in un area
 di memoria del programma marcata come eseguibile, seguita da
-un'instruzione ret. L'istruzione ret preleva dalla memoria dello stack
+un'istruzione ret. L'istruzione ret preleva dalla memoria dello stack
 un indirizzo e ridireziona il flusso del programma a quel dato
 indirizzo. Viene utilizzata al termine dell'esecuzione di una funzione
 per tornare alla porzione di codice che l'ha richiamata. Potendolo
@@ -102,13 +102,13 @@ sia presente l'indirizzo di una seconda serie dalle caratteristiche
 simili alla prima. Ripetendo lo stesso discorso più volte è possibile
 concatenare un numero arbitrario di queste piccole serie di istruzioni
 (che prendono il nome di \emph{gadget}). In \cite{roemer-12} è stato
-dimostrato che, quando sono presenti opportunee tipologie di gadget,
+dimostrato che, quando sono presenti opportune tipologie di gadget,
 utilizzando il ROP si possono effettuare computazioni
-turing-complete. Utilizzando opportunee sequenze di gadget è possibile
+turing-complete. Utilizzando opportune sequenze di gadget è possibile
 applicare tecniche per eludere varie misure di protezione
 \cite{roglia:2009}.
 
-Un programma può essere compilato affinchè il suo codice sia
+Un programma può essere compilato affinché il suo codice sia
 indipendente dalla posizione in cui viene mappato in memoria
 (\emph{Position Indipendent Code}), in questo modo non solo le
 librerie, ma anche il programma stesso può essere caricato in un
@@ -147,7 +147,7 @@ una struttura dati contenga o no un dato valore.
 
 Nell'ambito del ROP un risolutore SMT può essere utilizzato sia per
 estrapolare in maniera automatica la semantica di un gadget, sia per
-ottenere le condizioni di partenza che consentino ad un gadget di
+ottenere le condizioni di partenza che cosentino ad un gadget di
 eseguire una determinata funzione (ad esempio i valori di registro per
 i quali un dato gadget scrivi in una specifica locazione di memoria un
 dato valore).
