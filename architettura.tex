@@ -276,10 +276,10 @@ utilizzando l'attuale traduzione delle istruzioni in formule SMT, è
 difficile porre al risolutore domande che riguardino il numero di
 letture effettuate, o domandare se un'area di memoria viene mai
 letta. L'estrapolazione della semantica di un gadget avviene in tre
-fasi: (a) emulazione e cataloghizzazione, (b) verifica e validazione e
+fasi: (a) emulazione e catalogazione, (b) verifica e validazione e
 (c) verifica degli effetti secondari.
 
-\subsection{Emulazione e cataloghizzazione}
+\subsection{Emulazione e catalogazione}
 La classe \lstinline{GadgetClassifier} emula il gadget tenendo traccia
 delle operazioni sui registri e sulla memoria. Con questi dati si
 verifica se il gadget appartiene ad una o più categorie indicate in
@@ -288,10 +288,10 @@ verifica se il gadget appartiene ad una o più categorie indicate in
 Inoltre vengono identificati quali registri vengono utilizzati come
 ``operandi'' della funzione alla quale il gadget viene
 associato. Basandosi su una simulazione e non su un effettiva analisi
-semantica questa cataloghizzazione deve essere poi verificata. Per le
+semantica questa catalogazione deve essere poi verificata. Per le
 simulazioni vengono utilizzati dati concreti ma una simulazione
 simbolica, funzionalità ancora non disponibile all'interno del
-framework BARF, consentirebbe una cataloghizzazione più veloce e
+framework BARF, consentirebbe una catalogazione più veloce e
 accurata esplicitando le relazioni tra i valori che i registri hanno
 all'inizio e alla fine della simulazione o tra i valori iniziali dei
 registri e gli accessi alla memoria.
@@ -317,7 +317,7 @@ soluzione. Se il sistema non ammette soluzione il gadget può essere
 scartato, in quanto non essendo usabile per quei valori perde la sua
 generalità. Nel caso invece il sistema ammetta soluzione vengono
 richiesti al risolutore i valori iniziali, all'interno del modello
-trovato, dei registri che, secondo la cataloghizzazione al punto uno,
+trovato, dei registri che, secondo la catalogazione al punto uno,
 sono gli ``operandi'' della funzione. Si impongono poi al risolutore
 nuovamente le formule SMT che rappresentano il gadget.  Questa volta
 si impongono però come valori iniziali per i registri operandi i
