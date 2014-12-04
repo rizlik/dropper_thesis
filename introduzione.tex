@@ -3,7 +3,7 @@
 \newpage
 \clearpage{\pagestyle{empty}\cleardoublepage}
 \mainmatter
-\chapter{Introduzione}
+\chapter*{Introduzione}
 %\addcontentsline{toc}{chapter}{Introduzione}
 
 
@@ -17,21 +17,23 @@ La tecnica forse più abusata era lo \emph{stack smashing}
 \cite{Phrack-96}, con la quale si compromisero centinaia di
 sistemi. La tecnica consisteva nello sfruttare un errato controllo dei
 limiti di un buffer memorizzato sullo stack per poter corrompere lo
-stack stesso, errore identificato come \emph{stack buffer
-  overflow}. In questo modo poteva essere ``iniettato'' nello stack
-codice arbitrario, solitamente definito \emph{shellcode} per via del
-suo obiettivo più comune: ottenere una shell. 
+stack stesso, cioè veniva causato uno \emph{stack buffer overflow}. In
+questo modo poteva essere ``iniettato'' nello stack codice arbitrario,
+solitamente definito \emph{shellcode} per via del suo obiettivo più
+comune: ottenere una shell. Scegliendono accuratamente i dati che
+andranno a sovrascrivere lo stack l'attaccante prendeva quindi
+controllo della macchina.
 
-Nello stack sono presenti informazioni chiave per il funzionamento del
-programma. Ad esempio, al momento di una chiamata a funzione,
-l'indirizzo dell'istruzione successiva viene memorizzato sullo stack,
-in questo modo, una volta terminato il lavoro della funzione, il
-programma sa da dove riprendere l'esecuzione. L'attaccante, una volta
-preso il controllo dello stack, può sovrascrivere il valore
-dell'indirizzo di ritorno, controllando da dove il programma
-continuerà. L'attaccante quindi può, compromettendo lo stack,
-redirezionare il flusso del programma in modo che esegua il codice da
-lui stesso iniettato.
+Infatti nello stack sono presenti informazioni chiave per il
+funzionamento del programma. Ad esempio, al momento di una chiamata a
+funzione, l'indirizzo dell'istruzione successiva viene memorizzato
+sullo stack, in questo modo, una volta terminato il lavoro della
+funzione, il programma sa da dove riprendere
+l'esecuzione. L'attaccante, una volta preso il controllo dello stack,
+può sovrascrivere il valore dell'indirizzo di ritorno, controllando da
+dove il programma continuerà. L'attaccante quindi può, compromettendo
+lo stack, redirezionare il flusso del programma in modo che esegua il
+codice da lui stesso iniettato.
 
 Sono state introdotte diverse misure di protezione per mitigare questo
 tipo di attacco. Con l'introduzione dell'isolamento delle pagine di
@@ -53,38 +55,41 @@ controllo del flusso per eseguire il codice iniettato.
 
 Tuttavia l'isolamento delle pagine di memoria e la casualizzazione
 dello stack non evita la compromissione né del flusso del programma né
-dello schema dello stack. Una delle tecniche utilizzata per ottenere
-il controllo di un programma nonostante lo stack non sia marcato come
-eseguibile si chiama \emph{return-to-libc}\cite{c0ntex}. In un
-utilizzo tipico di questa tecnica il flusso del programma non viene
-dirottato su un payload iniettato dall'attaccante ma su una funzione
-di una qualche libreria utilizzata dal programma. Su un architettura a
-32bit gli argomenti vengono passati alle funzioni posizionandoli
-secondo un ordine preciso (definito dalla \emph{calling convention})
-sullo stack. Dato che anche lo schema dello stack può essere
-compromesso l'attaccante ha di fatto il controllo degli argomenti da
-passare alla funzione. Potendo, ad esempio, richiamare la funzione
+dello schema dello stack. Un modo per ottenere il controllo di un
+programma nonostante lo stack non sia marcato come eseguibile consiste
+nel riutilizzare il codice del programma stesso, come nella tecnica
+denominata \emph{return-to-libc}\cite{c0ntex,
+  solar-return-to-libc}. In un utilizzo tipico di questa tecnica il
+flusso del programma non viene dirottato su codice iniettato
+dall'attaccante ma su una funzione di una qualche libreria utilizzata
+dal programma. Su un'architettura a 32bit gli argomenti vengono
+passati alle funzioni posizionandoli secondo un ordine preciso
+(definito dalla \emph{calling convention}) sullo stack. Dato che anche
+lo schema dello stack può essere compromesso l'attaccante ha,
+attraverso un arrangiamento minuzioso dello stack, di fatto la
+possibilità di controllare gli argomenti da passare alla
+funzione. Potendo, ad esempio, richiamare la funzione
 \lstinline{system} della libc con argomenti arbitrari è possibile
-eseguire un qualsiasi comando sulla macchina in cui si sta eseguendo il
-programma, oppure chiamando la funzione \lstinline{mprotect} (sempre
-nella libc) con gli opportuni argomenti si possono modificare i
-permessi della pagina di memoria dove risiede lo stack, rendendola
+eseguire un qualsiasi comando sulla macchina in cui si sta eseguendo
+il programma, oppure chiamando la funzione \lstinline{mprotect}
+(sempre nella libc) con gli opportuni argomenti si possono modificare
+i permessi della pagina di memoria dove risiede lo stack, rendendola
 eseguibile. A quel punto redirezionare il flusso del programma sul
 codice iniettato sullo stack non ne provocherà l'arresto. La tecnica
 funziona perché il codice ad essere eseguito risiede in un area di
 memoria eseguibile. Una tecnica per mitigare questo tipo di attacco è
 la casualizzazione dello spazio degli indirizzi (\emph{Address Space
-  Layout Randomization}). Le librerie vengono mappate ad indirizzi di
-memoria casuali, che cambiano da esecuzione ad esecuzione del
-programma. In questo modo non si conoscono gli indirizzi delle
-funzioni e un attacco di tipo return-to-libc naive non risulta
-possibile. Tuttavia su 32bit e sotto alcune condizioni questi
-indirizzi possono essere facilmente ricavati con un attacco a forza
-bruta\cite{Shacham:2004}. Anche se su un'architettura 64bit un attacco
-a forza bruta non risulta fattibile è tuttavia possibile che si riesca
-a sfruttare qualche altro errore di programmazione per ottenere
-l'indirizzo della libreria, riuscendo così a montare comunque
-l'attacco.
+  Layout Randomization}). Infatti nel momento in cui ASLR è attivo le
+librerie vengono mappate ad indirizzi di memoria casuali, che cambiano
+da esecuzione ad esecuzione del programma. In questo modo non si
+conoscono gli indirizzi delle funzioni e un attacco di tipo
+return-to-libc naive non risulta possibile. Tuttavia su 32bit e sotto
+alcune condizioni questi indirizzi possono essere facilmente ricavati
+con un attacco a forza bruta\cite{Shacham:2004}. Anche se su
+un'architettura 64bit un attacco a forza bruta non risulta fattibile è
+tuttavia possibile che si riesca a sfruttare qualche altro errore di
+programmazione per ottenere l'indirizzo della libreria, riuscendo così
+a montare comunque l'attacco.
 
 Una generalizzazione della return-to-libc è la tecnica che prende il
 nome di \emph{Return Oriented
@@ -95,41 +100,64 @@ di memoria del programma marcata come eseguibile, seguita da
 un'istruzione ret. L'istruzione ret preleva dalla memoria dello stack
 un indirizzo e ridireziona il flusso del programma a quel dato
 indirizzo. Viene utilizzata al termine dell'esecuzione di una funzione
-per tornare alla porzione di codice che l'ha richiamata. Potendolo
-controllare l'attaccante può sistemare lo schema dello stack in modo
-che una volta che il programma arrivi all'istruzione ret, sullo stack
-sia presente l'indirizzo di una seconda serie dalle caratteristiche
-simili alla prima. Ripetendo lo stesso discorso più volte è possibile
+per tornare alla porzione di codice che l'ha richiamata. Potendo
+controllare lo stack l'attaccante può arrangiarlo in modo in modo che
+una volta che il programma arrivi all'istruzione ret, sullo stack sia
+presente l'indirizzo di una seconda serie dalle caratteristiche simili
+alla prima. Ripetendo lo stesso discorso più volte è possibile
 concatenare un numero arbitrario di queste piccole serie di istruzioni
-(che prendono il nome di \emph{gadget}). In \cite{roemer-12} è stato
-dimostrato che, quando sono presenti opportune tipologie di gadget,
-utilizzando il ROP si possono effettuare computazioni
-turing-complete. Utilizzando opportune sequenze di gadget è possibile
-applicare tecniche per eludere varie misure di protezione
-\cite{roglia:2009}.
+(che prendono il nome di \emph{gadget}). Questa tecnica è stata
+presentata la prima volta in \cite{Shacham-2007} e, quando sono
+presenti opportune tipologie di gadget, utilizzando il ROP si possono
+effettuare computazioni turing-complete. Utilizzando la ROP è
+possibile applicare tecniche per eludere varie misure di protezione
+\cite{roglia:2009} tra cui ASLR.
 
-Un programma può essere compilato affinché il suo codice sia
-indipendente dalla posizione in cui viene mappato in memoria
-(\emph{Position Indipendent Code}), in questo modo non solo le
-librerie, ma anche il programma stesso può essere caricato in un
-indirizzo casuale di memoria, che cambia tra un'esecuzione e
-l'altra. In questo caso non è più facilmente possibile montare un
-attacco che sfrutti i gadget, in quanto la posizione degli stessi non
-è nota. Altre tecniche sono stati sviluppate per mitigare attacchi di
-tipi ROP, anche se non risultano efficaci o l'overhead è troppo grande
+ASLR è un termine abbastanza generico e fin'ora abbiamo presupposto
+che solo gli indirizzi delle librerie e dell'area dello stack siano
+casualizzati, in realtà quando un programma viene compilato affinché
+il suo codice sia indipendente dalla posizione in cui viene mappato in
+memoria (\emph{Position Indipendent Executable}), anche il codice del
+programma stesso può essere caricato in un indirizzo casuale di
+memoria e cambiare tra un'esecuzione e l'altra. In questo caso non è
+più facilmente possibile montare un attacco del genere, in quanto non
+vi è più nessuna parte di codice che essendo mappata ad una posizione
+nota, possa essere sfruttata come destinazione del flusso del
+programma. In altre parole anche se abbiamo il modo di influenzare il
+flusso del programma non sappiamo da dove farlo continuare. Altre
+tecniche sono state sviluppate per mitigare attacchi di tipi ROP,
+anche se non risultano efficaci o l'overhead è troppo grande
 \cite{Davi-2014}.
 
+Lo scopo di questo lavoro di tesi è lo sviluppo di uno strumento che
+possa aiutare nel compito di generare un payload, cioè una serie di
+valori concreti che, se iniettati sullo stack di un eseguibile, possa
+sostituire il normale flusso del programma con l'esecuzione di una
+serie di gadget che hanno come scopo quello di lanciare un programma
+arbitrario sulla macchina (ad esempio una shell). In particolare lo
+strumento riesce a generare catene di gadgets per eludere misure di
+sicurezza come stack non eseguibile, casualizzazione dello spazio
+degli indirizzi e casualizzazione dello stack applicando, in maniera
+automatica, tecniche come \emph{got patching}, \emph{got dereferncing}
+e \emph{return to plt} \cite{roglia:2009}. Lo strumento utilizza per
+l'analisi del binario il recente framework di sviluppo BARF
+\cite{Heitman-14} e supporta l'architettura intel a 32bit e a
+64bit. Per la costruzione di questo payload, in particolare per
+l'estrapolazione e l'analisi dei gadget, è decisivo l'apporto dato da
+tecniche e strumenti propri dell'Intelligenza Artificiale.
+
 La \emph{Satisfability Modulo Theories}\cite{Barrett-14} è
-un'estensione della logica del primo ordine, che viene estesa con
+un'estensione della logica del primo ordine, che viene ampliata con
 teorie come quella dei bitvector e degli array, rendendolo un ottimo
 strumento per la modellazione dell'architettura di un elaboratore
 (specialmente dei registri e della memoria). Negli ultimi tempi è
 stata dedicata molta attenzione all'utilizzo di risolutori di formule
-SMT con applicazione nell'ambito della sicurezza\cite{}
-informatica. Riuscendo infatti a modellare le istruzioni e il contesto
-di esecuzione di un programma in formule SMT, il risolutore può essere
-utilizzato, ad esempio, per verificare che un programma aderisca ad
-una data semantica o per estrapolarne la semantica stessa.
+SMT con applicazione nell'ambito della sicurezza
+informatica\cite{Vanegue:2012}. Riuscendo infatti a modellare le
+istruzioni e il contesto di esecuzione di un programma in formule SMT,
+il risolutore può essere utilizzato, ad esempio, per verificare che un
+programma aderisca ad una data semantica o per estrapolarne la
+semantica stessa.
 
 Anche la simulazione simbolica viene utilizzata sempre di più
 nell'ambito della sicurezza. Ad esempio può essere utilizzata per
@@ -147,24 +175,22 @@ una struttura dati contenga o no un dato valore.
 
 Nell'ambito del ROP un risolutore SMT può essere utilizzato sia per
 estrapolare in maniera automatica la semantica di un gadget, sia per
-ottenere le condizioni di partenza che cosentino ad un gadget di
+ottenere le condizioni di partenza che consentino ad un gadget di
 eseguire una determinata funzione (ad esempio i valori di registro per
 i quali un dato gadget scrivi in una specifica locazione di memoria un
 dato valore).
 
-Lo scopo di questo lavoro di tesi è lo sviluppo di uno strumento che
-possa aiutare nel compito di generare una catena di gadget che sia in
-grado di prendere controllo di un programma, premesse alcune
-condizioni. In particolare lo strumento riesce a generare catene di
-gadgets per eludere misure di sicurezza come stack non eseguibile,
-casualizzazione dello spazio degli indirizzi e casualizzazione dello
-stack applicando, in maniera automatica, tecniche come \emph{got
-  patching} e \emph{return to plt} \cite{roglia:2009}. Lo strumento
-utilizza per l'analisi del binario il recente framework di sviluppo
-BARF \cite{Heitman-14} e supporta l'architettura intel a 32bit e a
-64bit.
-
-Descrizioni dei capitoli...
+Questo elaborato è organizzato come segue: la prima parte del primo
+capitolo è una breve panoramica tecnica sui meccanismi principali
+coinvolti nell'esecuzione di un programma che ci consente di avere le
+basi per analizzare, nella seconda parte dello stesso capitolo, alcune
+delle principali tecniche che vengono utilizzate oggi per eludere le
+più comuni misure di protezione attraverso la ROP. Il secondo capitolo
+invece è una descrizione dettagliata dell'architettura designata per
+Dropper. Il terzo capitolo parla invece della sua attuale
+implementazione. Infine nelle conclusioni sono presenti considerazioni
+generali emerse durante il lavoro di tesi nonché sugli sviluppi futuri
+che può avere Dropper e strumenti simili.
 
 %% NX, ASRL, ROP
 
