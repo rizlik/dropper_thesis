@@ -142,72 +142,56 @@ gadgetstools le sequenze di gadget necessarie. Lo schema principale
 delle varie strategie, si può dividere in due fasi: 
 
 \begin{inparaenum}[1)]
-\item preparare gli
-argomenti per eseguire una chiamata ad una funzione di libreria che ci
-consenta di eseguire un comando arbitrario e 
+\item preparare gli argomenti per eseguire una chiamata ad una
+  funzione di libreria che ci consenta di eseguire un comando
+  arbitrario (\lstinline{execve} o \lstinline{system}) e
 \item eseguire quella
 funzione.
 \end{inparaitem}
 
-Alcune delle strategie che si possono utilizzare per raggiungere il
-primo scopo insieme alle precondizioni necessarie sono elencate di
-seguito:
+Per scrivere in memoria è possibile utilizzare diverse strategie,
+Dropper deve scegliere la più adatta o quella specificata
+dall'utente. Il modulo deve essere facilmente estendibile per
+aggiungere nuove strategie. Alcune delle strategie più efficenti per
+scrivere in memoria sono:
 
 \begin{itemize}
 
-\item  Utilizzo della funzione \lstinline{read}
+\item Nel caso sia possibile inserire arbitrariamente dei valori in un
+  file descriptor (ad esempio se l'utente può inserire uno stream di
+  dati nell'input del programma) allora è comodo utilizzare la
+  funzione \lstinline{read} della \lstinline{libc} per copiare questi
+  dati nell'area di memoria di destinazione. Dropper fornisce i valori
+  da ``inserire'' nello stream dati del file descriptor. L'attaccante
+  deve fare in modo che quando la funzione \lstinline{read} venga
+  richiamata siano letti dal file descriptor proprio quei dati.
 
-  Condizioni necessarie: 
-  \begin{itemize}
-   \item Controllo di un file descriptor da parte dell'utente
-   \item Utilizzo da parte del file eseguibile della funzione
-     \lstinline{read} o possibilità di richiamarla attraverso tecniche
-     basate sulla ricavazione degli indirizzi partendo da indirizzi
-     nella \lstinline{GOT} e offset relativi
-  \end{itemize}
-
-  Viene richiamata la funzione \lstinline{read}, impostando gli
-  argomenti in modo che i dati letti dal file descriptor vengano
-  scritti nell'area di memoria voluta
-
-\item Utilizzo di gadget per la scrittura della memoria
-
-  Condizioni necessarie:
-  \begin{itemize}
-
-    \item All'interno del file oggetto eseguibile deve essere presente
-      almeno un gadget in grado di scrivere in memoria un valore
-      arbitrario
-
-    \item I valori da scrivere nella memoria non possono presentare
-      caratteri che non possono essere presenti nel payload, essendo
-      essi stessi scritti nel payload della catena generata
-
-  \end{itemize}
-  Solitamente una sequenza del genere consente di scrivere al massimo
-  8 byte per volta in un'architettura 64bit (4 byte per volta su
-  un'architettura a 32bit) e sono composte da almeno due gadget
-  (almeno un gadget serve per settare i registri utilizzati del gadget
-  che esegue la scrittura vera e propria). Questa tecnica tende quindi
-  a generare catene piuttosto lunghe se la dimensione dei valori da
-  scrivere in memoria è grande
-
-\end{itemize}
-
-Queste appena elencate le uniche due tecniche attualmente implementate,
-strategie alternative potrebbero comprendere:
-
-\begin{itemize}
+\item Utilizzo di catene di gadget che consentano di scrivere valori
+  costanti in memoria. Per poter utilizzare questa tecnica devono
+  essere disponibili i gadget delle categorie necessarie, in più i
+  valori da caricare in memoria non devono presentare caratteri che
+  non possono essere presenti nel payload. In questa tecnica i dati
+  non vengono scritti tutti in una volta ma a chunk di alcuni bytes
+  per volta (a seconda dell'architettura o del tipo di gadget). A
+  seconda del tipo di gadget per ognuna di queste iterazioni è
+  necessario inserire nel payload un certo numero di bytes di
+  ``padding''. Per questi motivi l'utilizzo di questa tecnica tende a
+  generare payload piuttosto lunghi.
 
 \item Utilizzo delle funzioni \lstinline{strcpy} o \lstinline{memcpy}
   per copiare byte presenti in posizioni note all'interno
-  dell'eseguibile nella posizione desiderata
-  \cite{roglia:2009}. Questa tecnica, copiando verosimilmente solo un
-  byte per volta tende anch'essa a generare payload abbastanza lunghi
+  dell'eseguibile nella posizione desiderata \cite{longld:2010}.
+  Questa tecnica, copiando verosimilmente solo un byte per volta tende
+  anch'essa a generare payload abbastanza lunghi ma ha il grande
+  vantaggio di poter copiare anche valori che non possono essere
+  presenti nel payload. È necessario che i valori dei byte che voglio
+  copiare siano già presenti nell'eseguibile, condizione che, a meno
+  di file oggetto eseguibili molto piccoli, risolta abbastanza comune
 
-\item Nel caso un bug renda possibile la conoscenza dell'indirizzo
-  dello stack gli argomenti possono essere scritti direttamente nello
-  stack
+\item Nel caso si riesca ad ottenere in qualche modo (ad esempio
+  attraverso una seconda vulnerabilità) la conoscenza dell'indirizzo
+  dello stack i valori possono essere inseriti direttamente insieme al
+  payload
 
 \end{itemize}
 
@@ -218,57 +202,45 @@ permetterci di eseguire un comando arbitrario. All'interno della
 caratteristiche: \lstinline{execve} e \lstinline{system}. Un ritorno
 diretto alla funzione solitamente non può avvenire, in quanto il
 valore del suo indirizzo in memoria è casualizzato. Tuttavia, se una
-funzione è utilizzata all'interno del programma, basterà ritornare
-alla sua entry nella Program Linkage Table, che ha una posizione nota
-e fissa all'interno della memoria dell'immagine del processo. Nel caso
-invece che la funzione non venga utilizzata un'alternativa è quella di
-adoperare tecniche per ricavare l'indirizzo della funzione partendo
+di queste due funzioni è utilizzata all'interno del programma, basterà
+ritornare alla sua entry nella Program Linkage Table, che ha una
+posizione nota e fissa all'interno della memoria dell'immagine del
+processo. Se così non fosse un'alternativa è quella di adoperare
+tecniche per ricavare l'indirizzo della funzione partendo
 dall'indirizzo di un'altra funzione della stessa libreria che invece
-viene utilizzata dal programma. Questo funziona perché nonostante
-l'indirizzo iniziale al quale una libreria viene caricata sia
-casualizzato, gli offset tra le funzioni non cambiano. Alcune
-considerazioni sull'utilizzo di questa tecnica:
+viene utilizzata dal programma. Queste tecniche vengono descritte
+nella sezione \ref{sec:expl}, alcune considerazioni aggiuntive che
+riguardano l'architettura di Dropper:
 
 \begin{itemize}
-
-  \item Devono essere noti gli offset delle funzioni all'interno del
+  \item Devono essere noti gli offset tra le funzioni all'interno del
     file oggetto condiviso della libreria utilizzato sulla macchina
-    bersaglio (anche se, variando in un range relativamente piccolo,
-    non dovrebbe essere impossibile, se le condizioni lo consentono,
-    montare un attacco di tipo forza bruta per ricavarli)
+    bersaglio. L'utente può fornire a Dropper un file di questo tipo
+    dal quale verranno ricavati i relativi offset. È da notare che,
+    variando in un range relativamente piccolo, non dovrebbe essere
+    impossibile, se le condizioni lo consentono, montare un attacco di
+    tipo forza bruta per ricavare questi offset
 
-  \item il binario deve presentare una sequenza di gadgets che ci
-    consenta di eseguire un'operazione di somma (o un'operazione che
-    ci consenta si simulare una somma, come una sottrazione) tra un
-    offset di tre/quattro byte e un'area di memoria arbitraria (l'area
-    dove è memorizzato l'indirizzo della funzione usata come
-    riferimento, solitamente nella GOT). Molto spesso però abbiamo
-    gadget che ci consentono di addizionare solo un byte per
-    volta. Questo è un problema perché in un'operazione di somma byte
-    per byte dev'essere considerato un eventuale valore di riporto tra
-    un byte e il successivo. Questo può essere risolto se il tipo di
-    gadget trovato usa un'istruzione di tipo \lstinline{adc} (add with
-    carry), controllando che tra gli effetti secondari degli altri
-    gadgets non venga modificato il carry flag. In realtà anche non
-    avendo a disposizione questo tipo di gadget, per via
-    dell'allineamento in memoria, gli ultimi bit dell'indirizzo di una
-    funzione non variano tra un'esecuzione e la successiva. Con
-    questa parziale conoscenza del valore iniziale si può comunque
-    creare una catena con un alta percentuale di successo come
-    descritto in TODO
-
-  \item Un tipo di attacco di questo tipo può essere mitigato se le
-    rilocazioni vengono impostate come read-only. In questo caso
-    infatti gli indirizzi delle funzioni vengono calcolati tutti al
-    momento di caricamento del programma, e la GOT, una volta
-    modificata opportunamente, viene resa non scrivibile. In questo
-    caso è ancora possibile montare un attacco del genere, ma
-    l'operazione aritmetica non può avvenire direttamente sulla got e
-    non può essere utilizzato un ret-to-plt per saltare all'indirizzo
-    calcolato. Bisogna cioè avere a disposizione i gadget necessari
-    per leggere dalla memoria, effettuare l'operazione aritmetica e
-    eseguire un jmp al nuovo indirizzo calcolato
-
+  \item Come visto in \ref{sec:expl} per poter utilizzare la tecnica
+    di \lstinline{got patching} il binario deve presentare una
+    sequenza di gadgets che ci consenta di eseguire un'operazione di
+    somma (o un'operazione che ci consenta di simulare una somma, come
+    una sottrazione) tra un offset di tre/quattro byte e un'area di
+    memoria arbitraria (l'area dove è memorizzato l'indirizzo della
+    funzione usata come riferimento, solitamente nella GOT). Molto
+    spesso però abbiamo gadget che ci consentono di addizionare solo
+    un byte per volta. Questo è un problema perché in un'operazione di
+    somma byte per byte dev'essere considerato un eventuale valore di
+    riporto tra un byte e il successivo. Un modo per risolvere questo
+    problema è utilizzare gadget che utilizzino un'istruzione di tipo
+    \lstinline{adc} (add with carry), facendo attenzione che gli
+    effetti secondari degli altri gadget non vadano a modificare il
+    carry flag. In realtà anche non avendo a disposizione questo tipo
+    di gadget, per via dell'allineamento in memoria, gli ultimi bit
+    dell'indirizzo di una funzione non variano tra un'esecuzione e la
+    successiva. Con questa parziale conoscenza del valore iniziale si
+    può comunque creare una catena con un alta percentuale di successo
+    come descritto in \ref{sec:arithmeticstore}
 \end{itemize}
 
 È interessante notare come, anche se vi è una guida nelle operazioni
@@ -283,7 +255,7 @@ con un approccio programmatico, tutte le combinazioni vanno codificate
 nell'algoritmo, una procedura la cui completezza è più difficile da
 dimostrare e che è molto più soggetta ad errori.
 
-\section{Modulo gadgetstools}
+\section{Modulo Gadgets}
 
 Il modulo gadgets tools si occupa di ricavare i gadgets presenti nel
 file oggetto eseguibile, di estrapolarne la semantica e della
