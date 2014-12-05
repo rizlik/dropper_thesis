@@ -39,27 +39,50 @@ quattro fasi:
 Nella prima fase, quella in cui si analizzano le informazioni presenti
 nel file oggetto eseguibile esaminato, vengono ricavate le
 informazioni sulle misure di protezione attualmente in uso sul file
-oggetto eseguibile, le funzioni utilizzate, le librerie dinamiche
+oggetto eseguibile, le funzioni utilizzate e le librerie dinamiche
 importate. Queste informazioni verranno utilizzate specialmente nella
 terza fase.
 
-Dropper, nella seconda fase, estrapola dal file binario i gadgets
-disponibili, per poi estrapolarne la semantica. Per questi compiti
-dropper si avvale sia dell'emulazione dei gadget, sia della loro
-modellizzazione in formule SMT, come descritto più in dettaglio nelle
-prossime sezioni. Una volta estrapolata la semantica dei gadget è
-possibile costruire piccole catene di uno o più gadget che consentano
-di eseguire operazioni particolari (come modificare il valore dello
-stack, chiamare una funzione, settare un registro, scrivere in
-memoria, operazioni aritmetiche, leggere dalla memoria, ecc). Dropper
-assembla poi queste piccole catene in catene più lunghe che eseguono
-operazioni più complesse e articolate. L'architettura prevede che la
-generazione di queste sequenze avvenga sia in maniera programmatica,
-cioè la procedura per la sua costruzione è codificata in un algoritmo,
-sia in maniera dichiarativa, ad esempio utilizzando linguaggi di
-planning come \lstinline{PDDL}\cite{pddl-97}. Un analisi sui vantaggi
-e sui problemi che si incontrano in una codifica del genere è
-riportata nella sezione \ref{sec:pddl}.
+Dropper, nella seconda fase, ricerca all'interno del file binario i
+gadgets disponibili. I gadget trovati vegono tradotti, dal framework
+BARF, in un linguaggio intermedio: REIL
+\cite{reil-dullien(csw09)}. Effettuare le analisi su un linguaggio
+intermedio anziché sulle istruzioni dell'architettura vera e propria
+porta una serie di vantaggi:
+
+\begin{itemize}
+ \item le operazioni di analisi vengono estratte e rese
+   indipendenti dalla specifica architettura. In questo modo è
+   possibile aggiungere il supporto di altre architetture allo
+   strumento in modo molto più semplice, operazione che si riduce a
+   sviluppare un traduttore da questa archiettura al linguaggio
+   intermedio
+
+ \item REIL ha un insieme di istruzioni molto ridotto (solo
+   quattordici istruzioni), questo facilità notevolmente lo sviluppo
+   di strumenti di analisi
+
+  \item le istruzioni di REIL non presentano nessun effetto
+  secondario implicito, come invece avviene per la maggior parte delle
+  istruzioni delle architetture reali
+
+\end{itemize}
+
+Una volta trovati e tradotti in un linguaggio intermedio è necessario
+estrapolare la semantica dei gadget. Questo permetterà nella fase
+successiva l'assemblaggio di piccole catene che consentano di eseguire
+operazioni particolari (come modificare il valore dello stack,
+chiamare una funzione, settare un registro, scrivere in memoria,
+operazioni aritmetiche, leggere dalla memoria, ecc). Dropper
+utilizzerà nella fase di creazione del payload queste piccole catene
+per assemblare catene via via più lunghe che eseguono operazioni più
+complesse e articolate. L'architettura prevede che la generazione di
+queste sequenze avvenga sia in maniera programmatica, in cui la
+procedura per la sua costruzione è codificata in un algoritmo, sia in
+maniera dichiarativa, ad esempio utilizzando linguaggi di planning
+come \lstinline{PDDL}\cite{pddl-97}. Un analisi sui vantaggi e sui
+problemi che si incontrano in una codifica del genere è riportata
+nella sezione \ref{sec:pddl}.
 
 Nella terza fase, per scegliere la tecnica di exploit appropriata,
 Dropper si basa sia su alcune informazioni che fornisce l'utente in
@@ -86,13 +109,15 @@ L'architettura di Dropper si compone di tre moduli logici:
 
 \begin{itemize}
 
-  \item Core: È il modulo che si occupa di (a) leggere il binario,
-    (b) coordinare le operazioni dei restanti moduli, (c) interagire
-    con l'utente per ottenere informazioni aggiuntive sul binario e/o
-    sullo scenario nel quale dev'essere prodotta la catena e (d)
-    scegliere le tecniche da utilizzare per riuscire a generare la
-    catena
-
+  \item Core: È il modulo che si occupa di 
+    \begin{inparaenum}[a)] 
+      \item leggere il binario,
+      \item coordinare le operazioni dei restanti moduli,
+      \item interagire con l'utente per ottenere informazioni
+        aggiuntive sul binario e/o sullo scenario nel quale dev'essere
+        prodotta la catena e 
+      \item scegliere la strategia di exploit più appropriata
+    \end{inparaenum}
   \item Gadgets: È il modulo che si occupa dell'estrapolazione,
     dell'analisi, della scelta e dell'assemblaggio dei gadget da utilizzare nella
     composizione della catena e dei vari sui frammenti
@@ -104,24 +129,24 @@ L'architettura di Dropper si compone di tre moduli logici:
 
 \end{itemize}
 
-\section{Modulo dropper}
+\section{Modulo Core}
 
 È il modulo che si occupa di leggere il file binario, interagire con
 l'utente, scegliere le varie strategie da adottare e di coordinare le
 azioni degli altri moduli. 
 
 Dropper parsa l'ELF e ricava la lista delle funzioni che il file
-oggetto eseguibile utilizza e le relative entry nella \emph{Procedure
+oggetto eseguibile utilizza, i relativi elementi nella \emph{Procedure
   Linkage Table} (vedi \ref{sec:plt}), le aree di memoria all'interno
 dell'immagine del processo dove è possibile scrivere e da dove è
-possibile leggere, le misure di protezione utilizzate dal file
+possibile leggere e le misure di protezione utilizzate dal file
 binario. Per il parsing dell'ELF Dropper utilizza una libreria
 apposita, pyelftools (\cite{pyelftools}).
 
 L'utente poi, interagendo con il modulo, fornisce informazioni
 aggiuntive necessarie alla generazione della catena e linee guida
-sulla strategia da utilizzare. Tra le informazioni che deve può
-fornire l'utente troviamo:
+sulla strategia da utilizzare. Tra le informazioni che può fornire
+l'utente troviamo:
 
 \begin{itemize}
   \item La possibilità da parte dell'utente di controllare un file
@@ -186,7 +211,7 @@ scrivere in memoria sono:
   vantaggio di poter copiare anche valori che non possono essere
   presenti nel payload. È necessario che i valori dei byte che voglio
   copiare siano già presenti nell'eseguibile, condizione che, a meno
-  di file oggetto eseguibili molto piccoli, risolta abbastanza comune
+  di file oggetto eseguibili molto piccoli, risulta abbastanza comune
 
 \item Nel caso si riesca ad ottenere in qualche modo (ad esempio
   attraverso una seconda vulnerabilità) la conoscenza dell'indirizzo
@@ -203,14 +228,14 @@ caratteristiche: \lstinline{execve} e \lstinline{system}. Un ritorno
 diretto alla funzione solitamente non può avvenire, in quanto il
 valore del suo indirizzo in memoria è casualizzato. Tuttavia, se una
 di queste due funzioni è utilizzata all'interno del programma, basterà
-ritornare alla sua entry nella Program Linkage Table, che ha una
+ritornare al suo elemento nella Program Linkage Table, che ha una
 posizione nota e fissa all'interno della memoria dell'immagine del
 processo. Se così non fosse un'alternativa è quella di adoperare
 tecniche per ricavare l'indirizzo della funzione partendo
 dall'indirizzo di un'altra funzione della stessa libreria che invece
-viene utilizzata dal programma. Queste tecniche vengono descritte
-nella sezione \ref{sec:expl}, alcune considerazioni aggiuntive che
-riguardano l'architettura di Dropper:
+viene utilnizzata dal programma. Alcune considerazioni su queste
+tecniche, descritte nella sezione \ref{sec:expl}, che riguardano
+l'architettura di Dropper sono:
 
 \begin{itemize}
   \item Devono essere noti gli offset tra le funzioni all'interno del
@@ -257,18 +282,19 @@ dimostrare e che è molto più soggetta ad errori.
 
 \section{Modulo Gadgets}
 
-Il modulo gadgets tools si occupa di ricavare i gadgets presenti nel
-file oggetto eseguibile, di estrapolarne la semantica e della
-creazione di sequenze di gadget che se eseguite assolvono funzioni
-particolari (come scrivere in memoria, settare un registro,
-ecc.). Questo modulo interagisce con payloadchunk per trasformare
-sequenze ordinate di gadget in un payload vero e proprio da poter
-iniettare sullo stack ed espone i metodi per la creazione delle catene
-che vengono usati dal modulo dropper.
+Il modulo Gadgets si occupa di ricavare i gadgets presenti nel file
+oggetto eseguibile, di estrapolarne la semantica e della creazione di
+sequenze di gadget che se eseguite assolvono funzioni particolari
+(come scrivere in memoria, settare un registro, ecc.). Questo modulo
+interagisce con il modulo Payload per trasformare sequenze ordinate di
+gadget in un payload vero e proprio da poter iniettare sullo stack ed
+espone i metodi per la creazione delle catene che vengono usati dal
+modulo Core.
 
 Per la ricerca dei gadget all'interno del file oggetto eseguibile
 viene utilizzata la classe \lstinline{GadgetFinder} del framework
-BARF, che implementa al suo interno l'algoritmo galileo\cite{roemer-12}. 
+BARF, che implementa al suo interno l'algoritmo
+galileo\cite{Shacham-2007}.
 
 %TODO descrivere galileo ?
 %TODO utilizzare il nostro ?
@@ -277,38 +303,55 @@ Una volta disponibile l'insieme dei gadget presenti nel file oggetto
 eseguibile bisogna, per ognuno di essi, estrapolarne la semantica. Per
 estrapolarne la semantica si intende estrapolare in maniera automatica
 gli effetti che una serie di istruzioni hanno sul contesto il quale,
-semplificando, è rappresentato dalla memoria e dai registri. Per
-questo tipo di analisi si utilizzano due strumenti principali: la
-simulazione e la traduzione delle istruzioni in formule
-SMT. Un'analisi completa della semantica presenta alcuni limiti dovuti
+semplificando, è rappresentato dalla memoria e dai registri della
+macchina sulla quale saranno eseguite le istruzioni. Per questo tipo
+di analisi si utilizzano due strumenti principali: la simulazione e la
+traduzione delle istruzioni in formule logiche. Sono state considerate
+due alternative principali per la modellazione delle istruzioni in
+formule logiche: \emph{Satisfaible Modulo
+  Theories}(SMT)\cite{Barrett-14} e \emph{Answer Setp
+  Programming}(ASP)\cite{Ianni-09}. Per questa prima versione è stata
+scelta la modellazione in formule SMT, un razionale per questa scelta
+viene fornito in \ref{sec:smt_vs_asp}.
+
+ Un'analisi completa della semantica presenta alcuni limiti dovuti
 alla difficoltà di una modellizzazione completa del sistema nonché
 alla conoscenza parziale del contesto (memoria e registri) reale in
 cui si troveranno ad essere eseguite le istruzioni. Ad esempio
 utilizzando l'attuale traduzione delle istruzioni in formule SMT, è
 difficile porre al risolutore domande che riguardino il numero di
 letture effettuate, o domandare se un'area di memoria viene mai
-letta. L'estrapolazione della semantica di un gadget avviene in tre
-fasi: (a) emulazione e catalogazione, (b) verifica e validazione e
-(c) verifica degli effetti secondari.
+letta. Per quanto detto l'estrapolazione della semantica di un gadget
+avviene in tre fasi descritte nelle prossime sottosezioni:
+\begin{inparaenum}[a)]
+\item emulazione e catalogazione, 
+\item verifica e validazione e 
+\item verifica degli effetti secondari.
+\end{inparaenum}
 
 \subsection{Emulazione e catalogazione}
-La classe \lstinline{GadgetClassifier} emula il gadget tenendo traccia
-delle operazioni sui registri e sulla memoria. Con questi dati si
-verifica se il gadget appartiene ad una o più categorie indicate in
-\cite{schwartz-2011}. 
+La classe \lstinline{GadgetClassifier} del framework BARF emula il
+gadget tenendo traccia delle operazioni sui registri e sulla
+memoria. Con questi dati si verifica se il gadget appartiene ad una o
+più categorie indicate in \cite{schwartz-2011}.
 %TODO vanno elencate le categorie?  
 Inoltre vengono identificati quali registri vengono utilizzati come
 ``operandi'' della funzione alla quale il gadget viene
-associato. Basandosi su una simulazione e non su un effettiva analisi
-semantica questa catalogazione deve essere poi verificata. Per le
-simulazioni vengono utilizzati dati concreti ma una simulazione
-simbolica, funzionalità ancora non disponibile all'interno del
-framework BARF, consentirebbe una catalogazione più veloce e
-accurata esplicitando le relazioni tra i valori che i registri hanno
-all'inizio e alla fine della simulazione o tra i valori iniziali dei
-registri e gli accessi alla memoria.
+associato. Basandosi su una simulazione, e quindi sull'analisi degli
+effetti di solo un sottoinsieme dei possibili valori in ingresso,
+questa catalogazione deve essere poi verificata con un'analisi
+semantica vera e propria.
 
-\subsection{Verifica e validazione}\label{s:verifica_validazione}
+Le simulazioni vengono effettuate utilizzando dati concreti ma una
+simulazione simbolica, funzionalità ancora non disponibile all'interno
+del framework BARF, consentirebbe una catalogazione più accurata
+esplicitando le relazioni tra i valori che i registri hanno all'inizio
+e alla fine della simulazione o tra i valori iniziali dei registri e
+gli accessi alla memoria.
+
+\subsection{Verifica e validazione}
+\label{s:verifica_validazione}
+
 Si deve poi verificare che, anche se il gadget esegua la funzione
 della categoria alla quale viene assegnato, possa essere utilizzato
 per i valori di tutto il ``dominio'' di questa funzione, cioè che non
@@ -316,38 +359,71 @@ ci siano restrizioni sugli operandi del gadget. Per esempio, un gadget
 catalogato come \lstinline{MemoryStore} ma che utilizzi lo stesso
 registro come operando di destinazione e operando sorgente non può
 essere utilizzato per scrivere in una locazione arbitraria di memoria
-un valore arbitrario. Per questa verifica si scelgono casualmente gli
-effetti che deve avere la funzione sul contesto. Ad esempio se stiamo
-verificando un \lstinline{MemoryStore} si sceglie sia una locazione
-casuale di memoria sia un valore casuale da scrivere in questa
-locazione. Si traduce il gadget in formule SMT e si impone che il
-contesto finale rifletta gli effetti, scelti casualmente, che la
-nostra funzione deve avere. Nel nostro esempio si impone che la
-locazione di memoria cambi al valore casuale scelto. Si chiede a
-questo punto al risolutore se il sistema di formule ammette una
-soluzione. Se il sistema non ammette soluzione il gadget può essere
-scartato, in quanto non essendo usabile per quei valori perde la sua
-generalità. Nel caso invece il sistema ammetta soluzione vengono
-richiesti al risolutore i valori iniziali, all'interno del modello
-trovato, dei registri che, secondo la catalogazione al punto uno,
-sono gli ``operandi'' della funzione. Si impongono poi al risolutore
-nuovamente le formule SMT che rappresentano il gadget.  Questa volta
-si impongono però come valori iniziali per i registri operandi i
-valori ottenuti dalla prima verifica e, inoltre, che il valore finale
-sia diverso da quello aspettato. La non soddisfacibilità di questa
-formula ci dà la certezza che in tutti i modelli che soddisfano la
-semantica del gadget, che hanno come valori iniziali dei registri
-``operandi'' quelli ottenuti dalla prima verifica, lo stato finale del
+un valore arbitrario in quanto il valore da scrivere e l'indirizzo di
+memoria sono dipendenti tra di loro.
+
+Bisogna verificare altresì che l'assegnamento dei valori appropriati
+ai registri ``operandi'' sia condizione sufficiente perchè il gadget
+si comporti aderendo alla semantica della categoria in cui è stato
+catalogato. Sempre continuando con l'esempio della scrittura in
+memoria, questo vuol dire essere sicuri che, se i registri utilizzati
+come operandi sono impostati con i valori appropriati, la scrittura in
+memoria del valore voluto sia garantita per qualsiasi altra
+combinazione iniziale dei restanti registri.
+
+
+Le verifiche che ci consentono di verificare le due proprietà appena
+discusse sono dipendenti dalla tipologia di gadget, ma possono essere
+tutte ricondotte alla seguente strategia generale: 
+\begin{enumerate}
+\item si scelgono casualmente gli effetti che deve avere la funzione
+  sul contesto
+\item si traduce il gadget in formule logiche e si impone che il
+  contesto finale rifletta gli effetti scelti, nel caso l'insieme
+  delle formule ottenuto non sia soddisfacibile il gadget può essere
+  scartato
+\item si richiede al risolutore logico il modello che rende vera la
+  formula al punto precedente e da questo modello si ricavano i valori
+  iniziali dei registri operandi
+\item si ricrea la rappresentazione del gadget in formule logiche ma
+  forzando i valori dei registri iniziali ai valori ottenuti al punto
+  precedente e imponendo come condizione finale il complementare degli
+  effetti voluti
+\item si verica che il modello del punto precedente non sia
+  soddisfacibile
+\end{enumerate}
+
+Ad esempio se stiamo verificando un \lstinline{MemoryStore} si sceglie
+sia una locazione casuale di memoria sia un valore casuale da scrivere
+in questa locazione. Si traduce il gadget in formule logiche e si
+impone che nel contesto finale che la locazione di memoria scelta
+cambi al valore casuale scelto. Si chiede a questo punto al risolutore
+se il sistema di formule ammette una soluzione. Se il sistema non
+ammette soluzione il gadget può essere scartato, in quanto non essendo
+usabile per i valori perde la sua generalità. Nel caso invece il
+sistema ammetta soluzione vengono richiesti al risolutore i valori
+iniziali, all'interno del modello trovato, dei registri ``operandi''
+della funzione, quelli utilizzati per impostare indirizzo di
+destinazione e valore da scrivere. Si impongono poi al risolutore
+nuovamente le formule logiche che rappresentano il gadget ma vengono
+``forzati'' come valori iniziali per i registri operandi i valori
+ottenuti dalla prima verifica e, inoltre, si impone che il valore
+finale sia diverso da quello aspettato. La non soddisfacibilità di
+questa formula ci dà la certezza che per i valori iniziali dei
+registri operandi ottenuti dalla prima verifica, lo stato finale del
 contesto rispecchi i valori attesi. Questa verifica esclude che ci
 siano effetti secondari che possono interferire con gli effetti della
-nostra funzione. È da notare che queste proprietà sono verificate solo
-per dei valori casuali e dovrebbero essere verificate per tutti i
-valori. Questo non viene fatto sia per motivi di efficienza sia per
-non includere quantificatori universali nelle formule, complicando di
-molto il lavoro del risolutore e rischiando di ottenere formule non
-decidibili. Questo problema può essere risolto ripetendo queste
-verifiche al momento dell'utilizzo reale del gadget con i valori
-concretamente utilizzati.
+nostra funzione.
+
+È da notare che queste proprietà sono verificate solo per dei valori
+casuali e dovrebbero essere verificate per tutti i valori. Questo non
+viene fatto sia per motivi di efficienza sia per non includere
+quantificatori universali nelle formule, complicando di molto il
+lavoro del risolutore. Questo problema può essere risolto sia
+ripetendo queste verifiche al momento dell'utilizzo reale del gadget
+con i valori concretamente utilizzati sia esprimendo gli effetti in
+relazione ai valori iniziali, ad esempio utilizzando alla simulazione
+simbolica.
 
 \subsection{Verifica degli effetti secondari}  
 
@@ -356,19 +432,19 @@ secondari che interferiscano con gli effetti della nostra
 funzione. Tuttavia è possibile che il gadget in esame abbia altri
 effetti secondari che non lo rendano utilizzabile. Ad esempio se il
 gadget legge da una locazione di memoria non leggibile causerà
-l'arresto del programma. La modellizzazione in SMT utilizzata
+l'arresto del programma. La modellazione in formule logiche utilizzata
 attualmente nel framework BARF non consente di porre al risolutore
 domande sul numero di letture in memoria o sulla lettura o meno di
-un area di memoria. Per questo motivo per escludere effetti
-secondari di questo tipo il gadget viene emulato con i valori di
-ingresso ricavati al punto 2, e ci si assicura che non vengano lette
-e scritte aree di memoria che non siano quelle relative alla
-funzione propria del gadget o all'area dello stack.
+un'area di memoria. Per questo motivo per escludere effetti secondari
+di questo tipo il gadget viene emulato con i valori di ingresso
+ricavati nella fase di verifica e validazione, e ci si assicura che
+non vengano lette e scritte aree di memoria che non siano quelle
+relative alla funzione propria del gadget o all'area dello stack.
 
 
 La linea guida generale appena descritta va adattata alla tipologia di
 gadget analizzata, per le implementazioni specifiche fare riferimento
-alla seconda parte di questo capitolo. Inoltre per poter utilizzare un
+al capitolo \ref{cap:implementazione}. Inoltre per poter utilizzare un
 gadget, i registri utilizzati come ``operandi'' devono essere
 ``controllabili'', cioè deve esistere una serie di gadget che consenta
 di poter caricare valori arbitrari in questi registri. Per questo
@@ -377,24 +453,20 @@ dell'eseguibile tutte le sequenze di gadget che ci permettono di
 controllare registri. Se un gadget utilizza come operandi registri che
 non sono ``controllabili'' questo viene scartato.
 
-Inoltre è da notare come la verifica potrebbe avvenire in modo più
-efficiente, utilizzando delle simulazioni mirate a scartare i gadget
-che sicuramente non ci consentono di utilizzare valori arbitrari. In
-questa fase dello sviluppo del progetto però l'efficienza non viene
-considerata come prioritaria.  Durante queste le fasi di
-classificazione e verifica vengono anche raccolte informazioni
-aggiuntive sui gadget, come di come un gadget modifica il valore del
-registro dello stack e la posizione dello stack dove inserire i valori
-utilizzati dal gadget. Queste informazioni vengono utilizzate dal
-modulo \lstinline{PayloadChunk} per costruire il payload vero e proprio.
+Durante queste le fasi di classificazione e verifica vengono anche
+raccolte informazioni aggiuntive sui gadget, come di come un gadget
+modifica il valore del registro dello stack e la posizione dello stack
+dove inserire i valori utilizzati dal gadget. Queste informazioni
+vengono utilizzate dal modulo \lstinline{Payload} per costruire il
+payload vero e proprio.
 
 
 Per le simulazioni viene utilizzata la classe \lstinline{ReilEmulator}
-e la traduzione in formule smt avviene attraverso la classe
+e la traduzione in formule SMT avviene attraverso la classe
 \lstinline{CodeAnalyzer}, entrambe del framework BARF.
 
 
-\section{Payload Chunk}
+\section{Modulo Payload}
 
 Questo modulo si occupa di generare il payload vero e proprio partendo
 dai gadget analizzati dal modulo gadgetstools. Questa classe è
