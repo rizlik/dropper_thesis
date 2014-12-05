@@ -469,7 +469,7 @@ e la traduzione in formule SMT avviene attraverso la classe
 \section{Modulo Payload}
 
 Questo modulo si occupa di generare il payload vero e proprio partendo
-dai gadget analizzati dal modulo gadgetstools. Questa classe è
+dai gadget analizzati dal modulo Gadget. Questa classe è
 strutturata in modo che i diversi chunk prodotti siano concatenabili,
 e che la loro concatenazione dia a sua una volta un frammento
 concatenabile. Questo ci consente di associare ad una data funzione un
@@ -484,22 +484,22 @@ manipolazione dello stack da parte del gadget stesso:
     valore puntato dallo stack al momento della sua esecuzione
 
   \item valore al quale punterà lo stack al momento dell'esecuzione
-    dell'istruzione ret del gadget stesso. In base alla tipologia di
-    gadget questo valore potrebbe non essere alla fine del payload
-    relativo al gadget stesso
+    dell'istruzione ret del gadget. In base alla tipologia di gadget
+    questo valore potrebbe non essere alla fine del payload associato
+    al gadget stesso
     
   \item valore finale dello stack dopo l'esecuzione del gadget
 
 \end{itemize}
 
 Le informazioni relative alle tre problematiche descritte sopra
-vengono estrapolate dal gadgetstools. La procedura di generazione del
+vengono estrapolate dal Modulo Gadgets. La procedura di generazione del
 payload è specifica del tipo di gadget, i metodi
 \lstinline{PayloadChunk.chain} e
 \lstinline{PayloadChunk.get_general_chunk} sono invece generici,
 prendono come argomento una lista di chunk e restituiscono
 rispettivamente il payload dei chunk concatenati o un chunk che può
 essere nuovamente concatenato e rappresenta la concatenazione dei
-chunks in ingresso.
+chunk in ingresso.
 
 
