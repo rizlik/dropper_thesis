@@ -280,6 +280,216 @@ con un approccio programmatico, tutte le combinazioni vanno codificate
 nell'algoritmo, una procedura la cui completezza è più difficile da
 dimostrare e che è molto più soggetta ad errori.
 
+\subsection{Utilizzo di pianificatori per la costruzione della
+  catena}
+\label{sec:pddl}
+
+Il problema di generare una catena (quindi una sequenza) di gadget
+(che possono essere visti come azioni) per arrivare ad uno stato del
+sistema desiderato si traduce naturalmente in un problema di
+planning. Una volta tradotto si può utilizzare un planner per ottenere
+una soluzione valida e/o (dipende dal planner che si utilizza)
+ottima. PDDL \cite{pddl-97,fox-03} è un linguaggio che ha come
+obiettivo quello di fornire uno strumento universale per codificare
+problemi di planning. In questa sezione esamineremo un primo approccio
+che può essere utilizzato per tradurre il nostro problema nel
+linguaggio PDDL, analizzandone i principali problemi. Il linguaggio
+PDDL è fatto in modo da separare la descrizione del dominio del
+problema da quella della singola istanza del problema. 
+
+
+Gli elementi che possono essere descritti all'interno della codifica
+del dominio del problema rilevanti al fine della nostra discussione sono:
+\begin{itemize}
+\item I diversi tipi di oggetto presenti nel nostro dominio
+\item \emph{Costants}, cioè oggetti che sono presenti in tutte le istanze del problema
+\item I vari \emph{Fluents}. Un \emph{fluents} è un mapping tra una
+  tupla di oggetti e un valore numerico che può cambiare durante un
+  piano. La loro sintassi e semantica è stata stabilizzata nel
+  linguaggio in \cite{fox-03}
+\item Le azioni. Ogni azione può avere dei parametri e definisce
+  l'insieme delle possibili modifiche che possono essere effettuate
+  nel dominio modellato. Per ogni azione si indicano le precondition
+  (ovver condizioni necessarie per effettuare un'azione) e gli effetti
+  che le azioni hanno sugli oggetti del dominio o su i fluents 
+\end{itemize}
+
+Una singola istanza del problema invece definisce gli oggetti che le
+azioni possono manipolare, lo stato iniziale nel quale si trova il
+sistema, lo stato che vogliamo raggiungere (il nostro \emph{goal}) e
+la metrica con la quale valutare la bontà di un piano.  Come
+evidenziato in \cite{fox-03} i fluents non possono essere utilizzati
+come parametri di azioni perchè queste agiscono su oggetti ``fisici''
+e quindi i parametri devono appartenere ad insiemi finiti (e non ad
+insiemi infiniti come i numeri). 
+
+Per ovviare a questa limitazione nella nostra modellazione
+utilizzeremo come stratagemma quello di creare degli oggetti di tipo
+\lstinline{imm} e di associargli un valore tramite il fluent
+\lstinline{val (?x - imm)}. Questo fà si che le azioni possono
+utilizzare parametri di tipo imm e che negli effetti possiamo ricavare
+il valore che l'oggetto di tipo imm rappresenta. Questo ci obbliga,
+nell'istanza del problema, a definire tutti i valori numerici che
+saranno presenti nel piano come oggetti di tipo imm e ad associare per
+ognuno di essi il relativo fluents.
+
+I tipi di dato utilizzati nella modellazione sono \lstinline{imm}, con
+il significato appena spiegato, e \lstinline{register} che rappresenta
+per l'appunto un registro. I fluent utilizzati invece sono:
+
+\begin{itemize}
+\item (val ?x - imm) come appena definito
+\item (reg ?r - register) che rappresenta il valore attuale del
+  registro ?r
+\item (mem ?a - imm) che rappresenta il valore attuale della locazione
+  di memoria ?a
+\end{itemize}
+
+Vengono create tante costanti quante i registri.  Ogni azione invece
+corrisponde ad un gadget e le azioni riflettono gli effetti che il
+gadget ha sui registri e sulla memoria.  Attualmente si è proceduto a
+modellare solo gadget per l'impostazione di registri o la scrittura di
+memoria. È da notare che per lo stratagemma usato tutti i valori
+(indirizzi e valori concreti) che le nostre azioni vanno ad utilizzare
+devono essere esplicitati. Un gadget per l'impostazione di un registro
+viene tradotto in questo modo (a meno dei puntini utilizzati per
+generalizzare la lista dei registri che è possibile impostare
+attraverso il gadget):
+
+\begin{lstlisting}
+  (:action regset_gadget
+	 :parameters (?vreg0 ?vreg1 ... ?vregn - imm)
+	 :precondition (and)
+	 :effect (and
+	 	 (assign (reg reg0) (val ?vreg0))
+	 	 (assign (reg reg1) (val ?vreg1))
+                 ...
+	 	 (assign (reg regn) (val ?vregn))
+		 (increase (stack-length) g.stack_offset)))
+\end{lstlisting}
+
+Come si può notare la traduzione avviene ad un livello d'astrazione
+più alto delle singole istruzioni del gadget, dettagli come la
+posizione dei valori da impostare nello stack, gli effetti secondari,
+vengono gestiti sempre da Dropper. La traduzione invece di un gadget
+per la scrittura in memoria è leggermente più complicata:
+
+\begin{lstlisting}
+(:action memstr_gadget
+  :parameters ()
+  :precondition (and)
+  :effect (and 
+           (forall (?a -imm) 
+             (when (= (val ?a) (reg rdi))
+              (assign (mem ?a) (reg rsi))))
+          (increase (stack-length) 0)))
+\end{lstlisting}
+
+Questa modellazione poco elegante è dovuta al non poter utilizzare i
+fluents come argomenti per altri fluents.  Una volta tradotto il
+dominio, si crea un'istanza del problema. Si specificano gli oggetti
+che faranno parte dell'istanza del problema, cioè i valori che andremo
+ad utilizzare. Come stato iniziale si impostano i fluents dei registri
+a zero, si assegnano i rispettivi valori ai fluents di tipo (val ?v -
+imm) e si setta anche il fluent \lstinline{stack-length} a zero,
+quest'ultimo viene utilizzato come metrica per valutare la bontà del
+piano trovato. Come stato desiderato si imposta o, nel caso si voglia
+trovare un piano per settare un insieme di registri, che i fluent
+rilevanti di tipo (reg ?r) abbiano i valori desiderati o, nel caso
+invece si voglia trovare un piano per impostare alcune specifiche
+locazioni di memoria, che i fluents del tipo (mem ?a) abbiano il
+valore corrispondente. Un esempio, con la lista dei gadgets accorciata
+per brevità è riportato nelle figure \ref{pddl:domain} e
+\ref{pddl:facts}. L'esempio è generato tramite la classe
+\lstinline{planner}.
+
+La codifica appena presentata è molto banale e presenta alcuni
+problemi. Prima di tutto non considera i valori della memoria e dei
+registri come vettori di bit. Una soluzione potrebbe essere quella di
+modellare la granularità delle azioni (e dei fluents) al singolo
+byte. Anche se questo non consentirebbe di modellare azioni che
+effituino operazioni di tipo bit a bit aumenterebbe di molto
+l'espressività della modellazione proposta. 
+
+Il secondo problema è che una quantità di azioni grande quanto il
+numero di gadget presente nell'eseguibile rende l'utilizzo di planner
+general-porpose inefficiente. Nei primi test effettuati la maggior
+parte dei planner non riesce neanche a iniziare la fase di
+ricerca. Una soluzione potrebbe essere quella di filtrare i gadget in
+una prima fase, in modo da fornire una quantità più limitata di azioni
+nella descrizione del problema.
+
+
+\begin{lstlisting}
+
+;gadgets: 
+;0x412050 : pop rsi; pop r15; ret
+;0x412052 : pop rdi; ret
+;0x40ea2c : mov dword ptr [rdi], esi; ret
+
+(define (domain dropper )
+(:requirements :typing :fluents :conditional-effects)
+(:types imm register)
+(:constants rax rbx rcx rdx rdi rsi rbp rsp rip r8 r9 r10 r11 r12 r13 r14 r15 - register)
+
+(:functions 
+  (val ?x -imm)
+  (reg ?r - register)
+  (stack-length)
+  (mem ?addres - imm))
+
+(:action regset_412052
+   :parameters (?vrdi - imm)
+   :precondition (and)
+   :effect (and         (assign (reg rdi) (val ?vrdi))
+     (increase (stack-length) 8)))
+
+(:action regset_412050
+   :parameters (?vr15 ?vrsi - imm)
+   :precondition (and)
+   :effect (and         (assign (reg r15) (val ?vr15))
+         (assign (reg rsi) (val ?vrsi))
+     (increase (stack-length) 16)))
+
+(:action memstr_40ea2c
+  :parameters ()
+  :precondition (and)
+  :effect (and (forall (?a ?v -imm) 
+      (when (and (= (val ?a) (reg rdi))
+      (= (val ?v) (reg rsi))) (assign (mem ?a) (val ?v))))
+     (increase (stack-length) 0)))
+)
+
+
+\end{lstlisting}
+\label{pddl:domain}
+
+
+\begin{lstlisting}
+(define (problem memset)
+(:domain dropper)
+(:objects v_32896 v_2 v_33153 v_3 - imm)
+(:init
+(= (val v_32896) 32896)
+(= (val v_33153) 33153)
+(= (val v_2) 2)
+(= (val v_3) 3)
+(= (reg rax) 0)(= (reg rbx) 0)(= (reg rcx) 0)(= (reg rdx) 0)(= (reg rdi) 0)
+(= (reg rsi) 0)(= (reg rbp) 0)(= (reg rsp) 0)(= (reg rip) 0)(= (reg r8) 0)
+(= (reg r9) 0)(= (reg r10) 0)(= (reg r11) 0)(= (reg r12) 0)(= (reg r13) 0)
+(= (reg r14) 0)(= (reg r15) 0)
+(= (mem v_32896) 0)
+(= (mem v_33153) 0)
+(= (stack-length) 0))
+(:goal 
+(and (= (mem v_32896) 2)
+  (= (mem v_33153) 3)))
+(:metric minimize (stack-length))
+)
+\end{lstlisting}
+\label{pddl:facts}
+
+
 \section{Modulo Gadgets}
 
 Il modulo Gadgets si occupa di ricavare i gadgets presenti nel file
@@ -306,28 +516,60 @@ gli effetti che una serie di istruzioni hanno sul contesto il quale,
 semplificando, è rappresentato dalla memoria e dai registri della
 macchina sulla quale saranno eseguite le istruzioni. Per questo tipo
 di analisi si utilizzano due strumenti principali: la simulazione e la
-traduzione delle istruzioni in formule logiche. Sono state considerate
-due alternative principali per la modellazione delle istruzioni in
-formule logiche: \emph{Satisfaible Modulo
-  Theories}(SMT)\cite{Barrett-14} e \emph{Answer Setp
-  Programming}(ASP)\cite{Ianni-09}. Per questa prima versione è stata
-scelta la modellazione in formule SMT, un razionale per questa scelta
-viene fornito in \ref{sec:smt_vs_asp}.
+traduzione delle istruzioni in un istanza di un problema SMT. 
 
- Un'analisi completa della semantica presenta alcuni limiti dovuti
-alla difficoltà di una modellizzazione completa del sistema nonché
-alla conoscenza parziale del contesto (memoria e registri) reale in
-cui si troveranno ad essere eseguite le istruzioni. Ad esempio
-utilizzando l'attuale traduzione delle istruzioni in formule SMT, è
-difficile porre al risolutore domande che riguardino il numero di
-letture effettuate, o domandare se un'area di memoria viene mai
-letta. Per quanto detto l'estrapolazione della semantica di un gadget
-avviene in tre fasi descritte nelle prossime sottosezioni:
+\subsection{Traduzione di un gadget in formule logiche}
+
+Un'istanza di un problema SMT può essere considerata come una formula
+logica del primo ordine dove ad alcune funzioni e ad alcuni predicati
+vengono assegnati significati e interpretazioni particolari
+esplicitati in teorie aggiuntive \cite{Barrett-14}. Questo fa si che
+possano essere sviluppati metodi decisionali costruiti su misura per
+teorie specifiche, rendendo efficiente e possibile la codifica di
+problemi di alcuni domini particolari. Ad esempio, considerando una
+formula del tipo:
+
+$$ x < y ∧ ¬(x < y + 0)$$
+
+spesso ci interessa conoscere se la formula sia soddisfacibile solo
+sotto i comuni significati delle funzioni $+$, dei predicati $<$ e
+della costante $0$, ovvero ci interessa conoscere la soddisfacibilità
+della formula rispetto alla teoria aritmetica degli interi. Anche se è
+possibile in ogni caso incorporare una serie di formule insieme alla
+formula di input in modo da forzare un risolutore generale a
+considerare solo le interpretazioni compatibili con una data teoria,
+le prestazioni computazionali ottenute in questo modo non risultano
+spesso accettabili.  Infatti sono state sviluppate diverse procedure
+su misura per molte teorie tra cui quella degli array e dei bitvector,
+particolarmente rilevanti ai fini del nostro lavoro. Una volta che
+sono a disposizione queste teorie risulta naturale modellare registri
+e memoria rispettivamente attraverso Bitvector e Array di Bitvector.
+
+Questi sono le motivazioni principali della scelta di una modellazione
+che producesse un'instanza di un problema di SMT rispetto ad altri
+metodi di modellazione logici come \emph{Answer Set Programming}.
+
+Nelle figure \ref{cod:asm}, \ref{cod:reil} e \ref{cod:smt} sono
+mostrate rispettivamente le istruzioni di un gadget per la scrittura
+in memoria e le relative traduzioni in istruzioni reil e in una
+formula smt.
+
+Un'analisi completa della semantica presenta alcuni limiti dovuti alla
+difficoltà di una modellizzazione completa del sistema nonché alla
+conoscenza parziale del contesto (memoria e registri) reale in cui si
+troveranno ad essere eseguite le istruzioni. Ad esempio utilizzando
+l'attuale traduzione delle istruzioni in formule SMT, è difficile
+porre al risolutore domande che riguardino il numero di letture
+effettuate, o domandare se un'area di memoria viene mai letta. Per
+quanto detto l'estrapolazione della semantica di un gadget avviene in
+tre fasi descritte nelle prossime sezioni:
 \begin{inparaenum}[a)]
 \item emulazione e catalogazione, 
 \item verifica e validazione e 
 \item verifica degli effetti secondari.
 \end{inparaenum}
+
+
 
 \subsection{Emulazione e catalogazione}
 La classe \lstinline{GadgetClassifier} del framework BARF emula il
@@ -350,7 +592,7 @@ e alla fine della simulazione o tra i valori iniziali dei registri e
 gli accessi alla memoria.
 
 \subsection{Verifica e validazione}
-\label{s:verifica_validazione}
+\label{sec:verifica_validazione}
 
 Si deve poi verificare che, anche se il gadget esegua la funzione
 della categoria alla quale viene assegnato, possa essere utilizzato
@@ -501,5 +743,6 @@ prendono come argomento una lista di chunk e restituiscono
 rispettivamente il payload dei chunk concatenati o un chunk che può
 essere nuovamente concatenato e rappresenta la concatenazione dei
 chunk in ingresso.
+
 
 
