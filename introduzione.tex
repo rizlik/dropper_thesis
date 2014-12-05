@@ -1,6 +1,5 @@
 \thispagestyle{empty}
-\
-\newpage
+
 \clearpage{\pagestyle{empty}\cleardoublepage}
 \mainmatter
 \chapter*{Introduzione}
@@ -9,7 +8,7 @@
 
 A seguito dell'introduzione di misure di sicurezza come l'isolamento
 delle pagine di memoria, la casualizzazione dello spazio degli
-indirizzi, e il controllo della consistenza dello stack le tecniche
+indirizzi, e il controllo della consistenza dello stack, le tecniche
 per poter sfruttare gli errori presenti in un programma al fine di
 ottenerne il controllo sono cambiate radicalmente.
 
@@ -46,12 +45,14 @@ eseguibili ma non scrivibili, mentre stack e dati che il programma
 deve manipolare vengono mappati su pagine scrivibili ma non
 eseguibili. In questo modo non si può più semplicemente iniettare del
 codice, in quanto le aree di memoria scrivibili (tra cui l'area di
-memoria riservata allo stack) non potranno essere eseguite. Un'altra
-misura di protezione per rendere più difficile questo tipo di attacco
-è la casualizzazione dell'indirizzo di memoria nel quale risiede lo
-stack. In questo modo, non sapendo dove il codice iniettato
-effettivamente risiede, non si sa dove dover redirezionare il
-controllo del flusso per eseguire il codice iniettato.
+memoria riservata allo stack) non potranno contenere istruzioni che
+possano essere eseguite senza l'interruzione del programma da parte
+del sistema operativo. Un'altra misura di protezione per rendere più
+difficile questo tipo di attacco è la casualizzazione dell'indirizzo
+di memoria nel quale risiede lo stack. In questo modo, non sapendo
+dove il codice iniettato effettivamente risiede, non si sa dove dover
+redirezionare il controllo del flusso per eseguire il codice
+iniettato.
 
 Tuttavia l'isolamento delle pagine di memoria e la casualizzazione
 dello stack non evita la compromissione né del flusso del programma né
