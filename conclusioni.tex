@@ -20,7 +20,7 @@ strumento come Dropper elenchiamo:
   nonché con l'esecuzione stessa del programma in esame
 \item Scegliere, in base alle operazioni disponibili, la strategia da
   utilizzare per eseguire l'exploit
-\item Individuare una sequenza di operazioni che eseguino con successo
+\item Individuare una sequenza di operazioni che eseguono con successo
   una data strategia
 \end{enumerate}
 
@@ -69,9 +69,9 @@ troviamo
 \item utilizzo di sequenza di gadget sempre per la  scrittura in memoria
 \item got patching e
 \item return-to-plt
-\end{itemize}
+\end{inparaenum}
 
-Trovare le sequenze per portare a terminte queste tecniche è un
+Trovare le sequenze per portare a termine queste tecniche è un
 problema per certi versi simile a trovare le catene di gadget per
 eseguire le operazioni ``elementari'', ma da un punto di astrazione
 più alto.  Vi è qui, tra le difficoltà più rilevanti, quella di
@@ -79,35 +79,35 @@ esaminare tutte le possibili sequenze di operazioni per applicare
 quella tecnica. In questa fase i vantaggi dell'utilizzo di un planner
 sembrano ancora più rilevanti.
 
-I test durante lo sviluppo sono stati effettuati prendendo in esame alcuni
-livelli di exploit-exercise\cite{exploit-exercise} e alcuni eseguibili
-contenuti nelle bin-utils (ls, echo, mv).
+I test durante lo sviluppo sono stati effettuati prendendo in esame
+alcuni livelli di exploit-exercise\cite{exploit-exercise} e alcuni
+eseguibili contenuti nelle bin-utils (ls, echo, mv).
 
 \section{Sviluppi futuri}
 
 Dropper ha prospettive di sviluppo su diversi fronti. 
 
-L'aggiunta dell'estrapolazione semantica per le categorie di gadget
-mancanti consentirebbe l'applicazione di ulteriori tecniche per
-l'exploitation.
+Sicuramente l'utilizzo di una simulazione simbolica semplificherebbe
+di molto l'analisi semantica, potendo verificare direttamente le
+relazioni tra valori in ingresso ed effetti dei gadget. 
 
-Per quanto riguarda la generazione della catena invece si è iniziato
-ad utilizzare un planner, ma essendo ancora ad una fase iniziale vi è
-molto spazio per ulteriori sviluppi e indagini.
+Dai primi risultati ottenuti utilizzando un planner,  ci si è resi
+conto che quest'area potrebbe portare notevoli vantaggi ma che
+richiede ulteriori indagini.
 
 Un'altra idea interessante è cercare di estrapolare non solo gadget
-``classici'' ma anche altre tipologie, come ad esempio gadget che
-termino con un \lstinline{jmp} invece che con un ret, utilizzati nella
-\emph{Jump Oriented Programming}, oppure gadget di lunghezza maggiore
-ma con effetti secondari ``controllabili'' (ad esempio gadget lunghi
-ma dove si può forzare un flusso di esecuzione). Quest'ultima
-tipologia di gadget è necessaria per eludere alcune tecniche di
-mitigazione che si basano sul monitoraggio di un numero limitato di
-istruzioni.
+``classici'' ma anche altre tipologie. Ad esempio un'estensione della
+ROP consiste nell'utilizzare sequenze di istruzioni che terminano con
+un'istruzione di tipo \lstinline{jmp} invece che con una di tipo
+\lstinline{ret} (infatti questa tecnica prende il nome di \emph{Jump
+  Oriented Programming} \cite{Checkoway-10}).
 
-Un vantaggio notevole, si avrebbe nell'effettuare anche simulazioni
-simboliche per l'estrapolazione e la verifica semantica dei gadget.
-
+Un altro esempio è quello di ricercare gadget di lunghezza maggiore ma
+con effetti secondari ``controllabili'', ad esempio obbligando il
+gadget a seguire un flusso di esecuzione piuttosto che
+un altro. Quest'ultima tipologia di gadget è necessaria per eludere
+alcune tecniche di mitigazione che si basano sul monitoraggio di un
+numero limitato di istruzioni.
 
 %%% Local Variables: 
 %%% mode: latex

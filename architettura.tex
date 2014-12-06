@@ -23,7 +23,7 @@ Dropper è python e, nella sua prima versione, supporta le architetture
 formato degli eseguibili supportato è ELF). Tuttavia come tratteremo
 meglio nel corso di questo capitolo, queste restrizioni possono essere
 facilmente superate nelle future versioni grazie all'astrazione data
-dall'utilizzio di un linguaggio intermedio per rappresentare le
+dall'utilizzo di un linguaggio intermedio per rappresentare le
 istruzioni.
 
 Una tipica sessione di Dropper può essere grossolanamente divisa in
@@ -31,7 +31,7 @@ quattro fasi:
 
 \begin{enumerate}
 \item Analisi del binario 
-\item Estrapolazione e analisi dei gadgets
+\item Estrapolazione e analisi dei gadget
 \item Scelta della strategia da utilizzare
 \item Creazione del payload
 \end{enumerate}
@@ -44,9 +44,9 @@ importate. Queste informazioni verranno utilizzate specialmente nella
 terza fase.
 
 Dropper, nella seconda fase, ricerca all'interno del file binario i
-gadgets disponibili. I gadget trovati vegono tradotti, dal framework
+gadget disponibili. I gadget trovati vengono tradotti, dal framework
 BARF, in un linguaggio intermedio: REIL
-\cite{reil-dullien(csw09)}. Effettuare le analisi su un linguaggio
+\cite{dullien-09}. Effettuare le analisi su un linguaggio
 intermedio anziché sulle istruzioni dell'architettura vera e propria
 porta una serie di vantaggi:
 
@@ -55,7 +55,7 @@ porta una serie di vantaggi:
    indipendenti dalla specifica architettura. In questo modo è
    possibile aggiungere il supporto di altre architetture allo
    strumento in modo molto più semplice, operazione che si riduce a
-   sviluppare un traduttore da questa archiettura al linguaggio
+   sviluppare un traduttore da questa architettura al linguaggio
    intermedio
 
  \item REIL ha un insieme di istruzioni molto ridotto (solo
@@ -164,7 +164,7 @@ l'utente troviamo:
 
 Con tutte queste informazioni il modulo può quindi procedere nello
 stabilire quale strategia utilizzare e richiedere al modulo
-gadgetstools le sequenze di gadget necessarie. Lo schema principale
+Gadgets le sequenze di gadget necessarie. Lo schema principale
 delle varie strategie, si può dividere in due fasi: 
 
 \begin{inparaenum}[1)]
@@ -178,7 +178,7 @@ funzione.
 Per scrivere in memoria è possibile utilizzare diverse strategie,
 Dropper deve scegliere la più adatta o quella specificata
 dall'utente. Il modulo deve essere facilmente estendibile per
-aggiungere nuove strategie. Alcune delle strategie più efficenti per
+aggiungere nuove strategie. Alcune delle strategie più efficienti per
 scrivere in memoria sono:
 
 \begin{itemize}
@@ -234,7 +234,7 @@ posizione nota e fissa all'interno della memoria dell'immagine del
 processo. Se così non fosse un'alternativa è quella di adoperare
 tecniche per ricavare l'indirizzo della funzione partendo
 dall'indirizzo di un'altra funzione della stessa libreria che invece
-viene utilnizzata dal programma. Alcune considerazioni su queste
+viene utilizzata dal programma. Alcune considerazioni su queste
 tecniche, descritte nella sezione \ref{sec:expl}, che riguardano
 l'architettura di Dropper sono:
 
@@ -248,8 +248,8 @@ l'architettura di Dropper sono:
     tipo forza bruta per ricavare questi offset
 
   \item Come visto in \ref{sec:expl} per poter utilizzare la tecnica
-    di \lstinline{got patching} il binario deve presentare una
-    sequenza di gadgets che ci consenta di eseguire un'operazione di
+    di \lstinline{GOT patching} il binario deve presentare una
+    sequenza di gadget che ci consenta di eseguire un'operazione di
     somma (o un'operazione che ci consenta di simulare una somma, come
     una sottrazione) tra un offset di tre/quattro byte e un'area di
     memoria arbitraria (l'area dove è memorizzato l'indirizzo della
@@ -320,14 +320,14 @@ azioni possono manipolare, lo stato iniziale nel quale si trova il
 sistema, lo stato che vogliamo raggiungere (il nostro \emph{goal}) e
 la metrica con la quale valutare la bontà di un piano.  Come
 evidenziato in \cite{fox-03} i fluents non possono essere utilizzati
-come parametri di azioni perchè queste agiscono su oggetti ``fisici''
+come parametri di azioni perché queste agiscono su oggetti ``fisici''
 e quindi i parametri devono appartenere ad insiemi finiti (e non ad
 insiemi infiniti come i numeri). 
 
 Per ovviare a questa limitazione nella nostra modellazione
 utilizzeremo come stratagemma quello di creare degli oggetti di tipo
 \lstinline{imm} e di associargli un valore tramite il fluent
-\lstinline{val (?x - imm)}. Questo fà si che le azioni possono
+\lstinline{val (?x - imm)}. Questo fa si che le azioni possono
 utilizzare parametri di tipo imm e che negli effetti possiamo ricavare
 il valore che l'oggetto di tipo imm rappresenta. Questo ci obbliga,
 nell'istanza del problema, a definire tutti i valori numerici che
@@ -399,7 +399,7 @@ trovare un piano per settare un insieme di registri, che i fluent
 rilevanti di tipo (reg ?r) abbiano i valori desiderati o, nel caso
 invece si voglia trovare un piano per impostare alcune specifiche
 locazioni di memoria, che i fluents del tipo (mem ?a) abbiano il
-valore corrispondente. Un esempio, con la lista dei gadgets accorciata
+valore corrispondente. Un esempio, con la lista dei gadget accorciata
 per brevità è riportato nelle figure \ref{pddl:domain} e
 \ref{pddl:facts}. L'esempio è generato tramite la classe
 \lstinline{planner}.
@@ -409,12 +409,12 @@ problemi. Prima di tutto non considera i valori della memoria e dei
 registri come vettori di bit. Una soluzione potrebbe essere quella di
 modellare la granularità delle azioni (e dei fluents) al singolo
 byte. Anche se questo non consentirebbe di modellare azioni che
-effituino operazioni di tipo bit a bit aumenterebbe di molto
+effettuino operazioni di tipo bit a bit aumenterebbe di molto
 l'espressività della modellazione proposta. 
 
 Il secondo problema è che una quantità di azioni grande quanto il
 numero di gadget presente nell'eseguibile rende l'utilizzo di planner
-general-porpose inefficiente. Nei primi test effettuati la maggior
+general-purpose inefficiente. Nei primi test effettuati la maggior
 parte dei planner non riesce neanche a iniziare la fase di
 ricerca. Una soluzione potrebbe essere quella di filtrare i gadget in
 una prima fase, in modo da fornire una quantità più limitata di azioni
@@ -423,7 +423,7 @@ nella descrizione del problema.
 
 \begin{lstlisting}
 
-;gadgets: 
+;gadget: 
 ;0x412050 : pop rsi; pop r15; ret
 ;0x412052 : pop rdi; ret
 ;0x40ea2c : mov dword ptr [rdi], esi; ret
@@ -493,7 +493,7 @@ nella descrizione del problema.
 
 \section{Modulo Gadgets}
 
-Il modulo Gadgets si occupa di ricavare i gadgets presenti nel file
+Il modulo Gadgets si occupa di ricavare i gadget presenti nel file
 oggetto eseguibile, di estrapolarne la semantica e della creazione di
 sequenze di gadget che se eseguite assolvono funzioni particolari
 (come scrivere in memoria, settare un registro, ecc.). Questo modulo
@@ -547,16 +547,16 @@ sono a disposizione queste teorie risulta naturale modellare registri
 e memoria rispettivamente attraverso Bitvector e Array di Bitvector.
 
 Questi sono le motivazioni principali della scelta di una modellazione
-che producesse un'instanza di un problema di SMT rispetto ad altri
+che producesse un'istanza di un problema di SMT rispetto ad altri
 metodi di modellazione logici come \emph{Answer Set Programming}.
 
 Nelle figure \ref{cod:asm}, \ref{cod:reil} e \ref{cod:smt} sono
 mostrate rispettivamente le istruzioni di un gadget per la scrittura
-in memoria e le relative traduzioni in istruzioni reil e in una
+in memoria e le relative traduzioni in istruzioni REIL e in una
 formula smt.
 
 Un'analisi completa della semantica presenta alcuni limiti dovuti alla
-difficoltà di una modellizzazione completa del sistema nonché alla
+difficoltà di una modellazione completa del sistema nonché alla
 conoscenza parziale del contesto (memoria e registri) reale in cui si
 troveranno ad essere eseguite le istruzioni. Ad esempio utilizzando
 l'attuale traduzione delle istruzioni in formule SMT, è difficile
@@ -606,7 +606,7 @@ un valore arbitrario in quanto il valore da scrivere e l'indirizzo di
 memoria sono dipendenti tra di loro.
 
 Bisogna verificare altresì che l'assegnamento dei valori appropriati
-ai registri ``operandi'' sia condizione sufficiente perchè il gadget
+ai registri ``operandi'' sia condizione sufficiente perché il gadget
 si comporti aderendo alla semantica della categoria in cui è stato
 catalogato. Sempre continuando con l'esempio della scrittura in
 memoria, questo vuol dire essere sicuri che, se i registri utilizzati
@@ -632,7 +632,7 @@ tutte ricondotte alla seguente strategia generale:
   forzando i valori dei registri iniziali ai valori ottenuti al punto
   precedente e imponendo come condizione finale il complementare degli
   effetti voluti
-\item si verica che il modello del punto precedente non sia
+\item si verifica che il modello del punto precedente non sia
   soddisfacibile
 \end{enumerate}
 
@@ -718,7 +718,7 @@ e che la loro concatenazione dia a sua una volta un frammento
 concatenabile. Questo ci consente di associare ad una data funzione un
 payload e utilizzarlo in diverse parti del programma senza dover più
 conoscerne i dettagli. Ci sono diverse cose da tenere in conto quando
-si costruisce il payload partendo dai gadgets, quasi tutte legate alla
+si costruisce il payload partendo dai gadget, quasi tutte legate alla
 manipolazione dello stack da parte del gadget stesso:
 
 \begin{itemize}

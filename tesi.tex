@@ -1,4 +1,4 @@
-\documentclass[12pt,oneside,a4paper,titlepage]{book}
+\documentclass[12pt,oneside,a4paper,titlepage]{report}
 %% \oddsidemargin52pt      %commentare se si stampa solo fronte
 %% \evensidemargin10pt     %commentare se si stampa solo fronte
 
@@ -40,12 +40,20 @@ stringstyle=\footnotesize,
 \renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
 \fancyhf{}
 
-\fancyhead[LE,RO]{\bfseries\thepage}
+%% For twoside
+%% \fancyhead[LE,RO]{\bfseries\thepage}
+%% \fancyhead[LO]{\bfseries\rightmark}
+%% \fancyhead[RE]{\bfseries\leftmark}
+
+\fancyhead[L,RO]{\bfseries\thepage}
 \fancyhead[LO]{\bfseries\rightmark}
-\fancyhead[RE]{\bfseries\leftmark}
+\fancyhead[R]{\bfseries\leftmark}
+
+
 \renewcommand{\headrulewidth}{0.3pt}
 \renewcommand{\footrulewidth}{0pt}
-\addtolength{\headheight}{0.3pt} % riserva spazio per la linea
+%\addtolength{\headheight}{0.3pt} % riserva spazio per la linea
+\setlength{\headheight}{15pt} 
 \fancypagestyle{plain}{
     \fancyhead{}                        % ignora, nello stile plain, le intestazioni
     \renewcommand{\headrulewidth}{0pt}  % e la linea

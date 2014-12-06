@@ -1,7 +1,6 @@
 \thispagestyle{empty}
 
 \clearpage{\pagestyle{empty}\cleardoublepage}
-\mainmatter
 \chapter*{Introduzione}
 %\addcontentsline{toc}{chapter}{Introduzione}
 
@@ -19,7 +18,7 @@ limiti di un buffer memorizzato sullo stack per poter corrompere lo
 stack stesso, cioè veniva causato uno \emph{stack buffer overflow}. In
 questo modo poteva essere ``iniettato'' nello stack codice arbitrario,
 solitamente definito \emph{shellcode} per via del suo obiettivo più
-comune: ottenere una shell. Scegliendono accuratamente i dati che
+comune: ottenere una shell. Scegliendo accuratamente i dati che
 andranno a sovrascrivere lo stack l'attaccante prendeva quindi
 controllo della macchina.
 
@@ -84,7 +83,7 @@ la casualizzazione dello spazio degli indirizzi (\emph{Address Space
 librerie vengono mappate ad indirizzi di memoria casuali, che cambiano
 da esecuzione ad esecuzione del programma. In questo modo non si
 conoscono gli indirizzi delle funzioni e un attacco di tipo
-return-to-libc naive non risulta possibile. Tuttavia su 32bit e sotto
+return-to-libc naïve non risulta possibile. Tuttavia su 32bit e sotto
 alcune condizioni questi indirizzi possono essere facilmente ricavati
 con un attacco a forza bruta\cite{Shacham:2004}. Anche se su
 un'architettura 64bit un attacco a forza bruta non risulta fattibile è
@@ -136,7 +135,7 @@ valori concreti che, se iniettati sullo stack di un eseguibile, possa
 sostituire il normale flusso del programma con l'esecuzione di una
 serie di gadget che hanno come scopo quello di lanciare un programma
 arbitrario sulla macchina (ad esempio una shell). In particolare lo
-strumento riesce a generare catene di gadgets per eludere misure di
+strumento riesce a generare catene di gadget per eludere misure di
 sicurezza come stack non eseguibile, casualizzazione dello spazio
 degli indirizzi e casualizzazione dello stack applicando, in maniera
 automatica, tecniche come \emph{got patching}, \emph{got dereferncing}
@@ -176,7 +175,7 @@ una struttura dati contenga o no un dato valore.
 
 Nell'ambito del ROP un risolutore SMT può essere utilizzato sia per
 estrapolare in maniera automatica la semantica di un gadget, sia per
-ottenere le condizioni di partenza che consentino ad un gadget di
+ottenere le condizioni di partenza che consentano ad un gadget di
 eseguire una determinata funzione (ad esempio i valori di registro per
 i quali un dato gadget scrivi in una specifica locazione di memoria un
 dato valore).
