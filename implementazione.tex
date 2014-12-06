@@ -253,14 +253,14 @@ gadget per procedere alla fase di verifica e validazione.
 
 Innanzitutto se il registro di destinazione è il registro dello stack
 il gadget viene scartato. Questo fa in modo che non vengano presi in
-considerazione i gadget con istruzioni tipo \lstinline{push
-  reg}. Questi gadget infatti, solitamente non consentono di scrivere
-in una regione arbitraria della memoria, oltre a complicare la
-gestione dello schema dello stack. Dopo di che vengono scartati anche
-i gadget che hanno come registro di destinazione rip e eip. Infatti
-essendo questo registro fisso rispetto all'istruzione che lo esegue
-neanche questi gadget ci consentono di scrivere in una posizione
-arbitraria di memoria.
+considerazione i gadget con istruzioni tipo \lstinline{push reg}.
+Questi gadget infatti, solitamente non consentono di scrivere in una
+regione arbitraria della memoria, oltre a complicare la gestione dello
+schema dello stack. Dopo di che vengono scartati anche i gadget che
+hanno come registro di destinazione rip e eip. Infatti essendo questo
+registro fisso rispetto all'istruzione che lo esegue neanche questi
+gadget ci consentono di scrivere in una posizione arbitraria di
+memoria.
 
 Dopo di che si procede seguendo le linee guida descritte in
 \ref{s:verifica_validazione}: il gadget viene scartato se non si
