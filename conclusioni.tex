@@ -1,6 +1,6 @@
 \chapter{Conclusioni}
 
-Lo sviluppo di uno strumento come dropper mi ha permesso di studiare
+Lo sviluppo di uno strumento come Dropper mi ha permesso di studiare
 ed esplorare problematiche interessanti e complesse. Uno strumento che
 riesce infatti ad analizzare un file binario e da esso estrarne in
 maniera automatica le informazioni necessarie per poter costruire un
@@ -10,84 +10,80 @@ lavoro alcuni strumenti propri dell'intelligenza artificiale hanno
 giocato un ruolo cruciale rendendo evidente l'apporto che questa
 disciplina può dare all'area della sicurezza informatica in
 generale. Tra le problematiche più rilevanti nello sviluppo di uno
-strumento come dropper elenchiamo:
+strumento come Dropper elenchiamo:
 
 \begin{enumerate}
 \item L'estrapolazione della semantica dei singoli gadget
 \item L'individuazione di una sequenza di gadget che ci consente di
-  eseguire un'operazione articolata. Questo punto è complicato dal
-  fatto che gli effetti di un gadget possono interferire con quelli di
-  un altro nonché con l'esecuzione stessa del programma in esame
+  eseguire una data operazione. Questo punto è complicato dal fatto che gli
+  effetti di un gadget possono interferire con quelli di un altro
+  nonché con l'esecuzione stessa del programma in esame
 \item Scegliere, in base alle operazioni disponibili, la strategia da
   utilizzare per eseguire l'exploit
-\item Individuare una sequenza di operazioni che portino a successo una
-  data strategia
+\item Individuare una sequenza di operazioni che eseguino con successo
+  una data strategia
 \end{enumerate}
 
 Il primo punto è stato affrontato, come descritto nei capitoli
 \ref{cap:architettura} e \ref{cap:implementazione}, attraverso sia
 tecniche di emulazione che tecniche di verifica basate sulla
 rappresentazione in formule logiche delle istruzioni dei
-gadget. Dropper attualmente può estrapolare la semantica di tipologie
-che ci permettono di:
-
-\begin{itemize}
-\item Impostare i valori di registri
-\item Effettuare operazioni aritmetiche in locazioni di memoria
-\item Scrivere su locazioni di memoria
-\item Azzerare il carry flag
-\end{itemize}
-
-Vengono inoltre inferite le informazioni necessarie per l'utilizzo dei
-gadget e gli effetti secondari con altri gadget (clobbering dei
-registri, scritture in aree di memoria).
+gadget. Dropper può estrapolare la semantica di diverse tipologie di
+gadget che ci permettono di eseguire operazioni, come il caricamento di
+costanti nei registri o l'effettuare operazioni aritmetiche in
+locazioni di memoria arbitrarie, e ed è facilmente estendibile per
+incorporare ulteriori analisi semantiche che consentano di eseguire
+operazioni sempre più complesse.
 
 La scelta di una sequenza di gadget che ci permetta di eseguire
 un'operazione articolata è un'altra problematica
 interessante. Infatti, oltre ad essere sicuri che la catena abbia gli
 effetti desiderati, è interessante cercare, tra le sequenze di gadget
 che ci permettano una particolare operazione, quella che produca un
-payload di minore lunghezza. Le catene che attualmente dropper riesce
-a generare combinano le tipologie di gadget viste sopra e ci
-consentono una visione ad un livello di astrazione più alto delle
-operazioni che possiamo eseguire con i gadget disponibili. Per
-generare le catene di queste operazioni, come descritto nei capitoli
-precedenti, si utilizza un approccio per lo più programmatico, usando
-quando possibile algoritmi greedy per la generazione di soluzioni di
-una certa qualità, cioè il cui payload abbia una lunghezza
-contenuta. Tuttavia il problema di generazione di una catena, definito
-come l'ordine nel quale effettuare alcune azioni (i gadget) per
-raggiungere un dato stato del sistema, si presta naturalmente ad una
-traduzione in un problema di planning . È stata esplorata questa
-strada, traducendo il problema, una volta estratta la semantica dei
-gadget, nel linguaggio PDDL 2.1 \cite{pddl-97,fox-03}. La strategia
-di modellizzazione utilizzata in questo primo approccio è riportata in
-\ref{sec:pddl}. Le ultime problematiche da affrontare, nella nostra
-panoramica dal basso verso l'alto, sono la scelta di una tecnica di
-exploiting e trovare una sequenza di operazioni per applicare tale
-tecniche.  Attualmente sono implementate le seguenti strategie:
+payload di minore lunghezza. Infatti, anche se questo dipende molto
+dalla tipologia di errore che si sta sfruttando, spesso si è limitati
+nella quantità di dati da poter iniettare.
 
-\begin{itemize}
-\item utilizzo della funzione ``read'' per la scrittura in memoria
-\item utilizzo di sequenza di gadget per scritture dai in memoria
-\item got patching
+Le catene che attualmente dropper riesce a generare ci consentono di
+avere una visione ad un livello di astrazione più alto delle
+operazioni che possiamo eseguire con i singoli gadget. Per generare le
+catene di queste operazioni, come descritto nei capitoli precedenti,
+si utilizza un approccio per lo più programmatico, usando quando
+possibile algoritmi greedy per la generazione di soluzioni di una
+certa qualità. Tuttavia il problema di generazione di una catena,
+definito come l'ordine nel quale effettuare alcune azioni (i gadget)
+per raggiungere un dato stato del sistema, si presta naturalmente ad
+una traduzione in un problema di planning.
+
+Alcune considerazioni su questo approccio, insieme ad una prima
+possibile modellazione che utilizzi il linguaggio PDDL 2.1
+\cite{pddl-97,fox-03} sono riportate nella sez. \ref{sec:pddl}.
+
+Le ultime problematiche che sono state affrontate, nella nostra
+panoramica dal basso verso l'alto, sono la scelta di una tecnica di
+exploiting e di una sequenza di operazioni per applicare tale
+tecniche. Tra le strategie applicate con successo nei primi testcase
+troviamo
+\begin{inparaenum}[1)]
+\item l'utilizzo della funzione ``read'' per la scrittura in memoria
+\item utilizzo di sequenza di gadget sempre per la  scrittura in memoria
+\item got patching e
 \item return-to-plt
 \end{itemize}
 
-Trovare questa sequenza è un problema per certi versi simile a trovare
-le catene di gadget per eseguire le operazioni ``elementari'', ma da un
-punto di astrazione più alto.  Vi è quindi, tra le difficoltà più
-rilevanti, quella di esaminare tutte le possibili sequenze di
-operazioni per applicare quella tecnica. In questa fase i vantaggi,
-sopratutto pensando a tecniche non ancora implementate come \emph{got
-  dereferencing}, dell'utilizzo di un planner sembrano ancora più
-rilevanti. Lo strumento è stato testato su alcuni livelli di
-exploit-exercise\cite{exploit-exercise} e su alcune delle bin-utils
-(ls, echo, mv), riuscendo a ritornare payload funzionanti una volta
-iniettati nello stack.
+Trovare le sequenze per portare a terminte queste tecniche è un
+problema per certi versi simile a trovare le catene di gadget per
+eseguire le operazioni ``elementari'', ma da un punto di astrazione
+più alto.  Vi è qui, tra le difficoltà più rilevanti, quella di
+esaminare tutte le possibili sequenze di operazioni per applicare
+quella tecnica. In questa fase i vantaggi dell'utilizzo di un planner
+sembrano ancora più rilevanti.
+
+I test durante lo sviluppo sono stati effettuati prendendo in esame alcuni
+livelli di exploit-exercise\cite{exploit-exercise} e alcuni eseguibili
+contenuti nelle bin-utils (ls, echo, mv).
 
 \section{Sviluppi futuri}
-
 
 Dropper ha prospettive di sviluppo su diversi fronti. 
 
