@@ -8,12 +8,12 @@ di Dropper.
 
 \subsection{Interazione con l'utente}
 
-Attualmente Dropper si interfaccia all'utente tramite alcune funzioni
-della classe \lstinline{dropper}. Il costruttore di questa classe
-riceve come argomento il percorso sul filesystem dove risiede il file
-oggetto eseguibile da analizzare. Le operazioni di analisi vengono
-avviate tramite la funzione \lstinline{analyze_all}. Una volta che
-l'analisi è stata effettuata si può richiamare la funzione
+Attualmente Dropper si interfaccia con l'utente tramite alcune
+funzioni della classe \lstinline{dropper}. Il costruttore di questa
+classe riceve come argomento il percorso sul filesystem dove risiede
+il file oggetto eseguibile da analizzare. Le operazioni di analisi
+vengono avviate tramite la funzione \lstinline{analyze_all}. Una volta
+che l'analisi è stata effettuata si può richiamare la funzione
 \lstinline{build_spawn_shell_payload} che si occuperà di generare la
 catena vera e propria. Anche se queste sono le uniche chiamate
 essenziali per utilizzare Dropper l'utente ha a disposizione ulteriori
@@ -26,18 +26,18 @@ funzioni:
 
 \item \lstinline{add_shared_object} permette di analizzare un oggetto
   che rappresenti una libreria dinamica. Dropper ricava da questo file
-  gli offset relativi tra le funzioni della libreria
+  gli offset relativi tra gli indirizzi delle funzioni della libreria
 
 \item \lstinline{set_function_for_address_resolving} indica la
   funzione di riferimento da utilizzare nell'applicazione di tecniche
   che ricavino l'indirizzo di funzioni casualizzate in memoria
-  partendo da valori nella GOT table (vedi sez. \ref{sec:expl}. La
+  partendo da valori nella GOT table (vedi sez. \ref{sec:expl}). La
   funzione indicata dev'essere già stata richiamata almeno una volta
   al momento dell'esecuzione della catena
 
-\item \lstinline{set_writeable_area} setta l'indirizzo dell'area di
+\item \lstinline{set_writeable_area} imposta l'indirizzo dell'area di
   memoria dove effettuare operazioni di scrittura. Di default questo
-  valore è settato all'indirizzo di caricamento in memoria della
+  valore è impostato all'indirizzo di caricamento in memoria della
   sezione \lstinline{.data}
 
 \item \lstinline{set_cmd} setta il comando da eseguire sulla macchina
@@ -47,7 +47,7 @@ funzioni:
 
 Quando il file eseguibile è stato analizzato e le informazioni
 necessarie impostate il metodo \lstinline{build_spawn_shell_payload}
-cerca di generare una catena che avvii il comando impostato.
+cerca di generare una catena che avvia il comando impostato.
 
 \subsection{Analisi degli import}
 
@@ -91,7 +91,7 @@ modo da restituire i valori calcolati dal modulo. I valori da inserire
 nel flusso del file descriptor vengono ricavati dall'utente attraverso
 il parametro \lstinline{fd_payload} di dropper.
 %%TODO
-Esempio?
+%%Esempio?
 
 Attualmente è implementata una seconda strategia nel caso non sia
 possibile richiamare la funzione \lstinline{read} e/o non si controlli
@@ -118,20 +118,26 @@ Infatti in questo Dropper cerca di far costruire al modulo Dropper una
 catena in grado di modificare il valore della Global Offset Table in
 loco, in modo da effettuare una tecnica di tipo \emph{got patching}
 (vedi \ref{sec:expl}). Il modulo Gadgets espone il metodo
-\lstinline{build_memory_write} che si occupa dei dettagli
+\lstinline{build_mem_add} che si occupa dei dettagli
 implementativi di questo tipo di catena. Viene chiamato dal modulo
 Core con i seguenti parametri:
 
 \begin{itemize}
   \item l'indirizzo di memoria dove eseguire la somma: l'indirizzo
-    dell'elemento della GOT da ``patchare''. Quest'informazione viene
-    ricavata durante la fase dell'analisi degli import
-  \item il valore da aggiungere: l'offset relativo tra la funzione
-    utilizzata come base e quella voluta
+    dell'elemento della GOT da ``patchare''. La funzione viene
+    indicata dall'utente tramite la funzione
+    \lstinline{set_function_for_address_resolving} e l'indirizzo viene
+    ricavato durante la fase dell'analisi degli import
+  \item l'addendo: l'offset relativo tra la funzione
+    utilizzata come base e quella voluta, questo valore viene
+    eventualmente ricavato dai file oggetto condivisi forniti a
+    Dropper tramite il metodo \lstinline{add_shared_object}
   \item il valore di base: l'offset che la funzione di base ha
-    all'interno del file oggetto condiviso della libreria. Come
-    vedremo questo rende possibile utilizzare la tecnica anche quando
-    le tipologie di gadget disponibili non sono ideali al prezzo di
+    all'interno del file oggetto condiviso della libreria, anch'esso
+    ottenuto analizzando un file indicato con la funzione
+    \lstinline{add_shared_object}. Come vedremo questo rende possibile
+    utilizzare una tecnica di tipo got patching anche quando le
+    tipologie di gadget disponibili non sono ideali al prezzo di
     sacrificare un'affidabilità del 100\% (vedi
     sez. \ref{sec:arithmeticstore})
 
@@ -165,7 +171,7 @@ i seguenti metodi per la generazione delle catene:
     esegue un operazione di addizione in una locazione di memoria
     arbitraria
   \item \lstinline{get_memory_store_chunk}: restituisce una catena che
-    scriva in memoria dei valori arbitrari
+    scrive in memoria valori arbitrari
   \item \lstinline{get_ccf_chunk}: restituisce un chunk che azzeri il
     carry flag
 \end{itemize}
@@ -182,7 +188,7 @@ caricate in memoria e marcate come eseguibili. Si è deciso di separare
 il modulo in diverse sottoclassi, ognuna delle quali contiene la
 logica per la selezione e l'utilizzo di un particolare tipo di gadget.
 
-\subsection{Selezione dei gadget per l'impostazione dei registri}
+\subsection{Gadget per l'impostazione dei registri}
 
 La logica e le strutture dati utilizzate per la selezione e la
 gestione dei gadget utilizzati per l'impostazione dei registri è
@@ -230,7 +236,7 @@ non è ottima. Nella sezione \ref{sec:pddl} è descritto un primo
 approccio per l'utilizzo di planner nella ricerca di una sequenza
 ottima.
 
-\subsection{Selezione dei gadget per la scrittura in memoria}
+\subsection{Gadget per la scrittura in memoria}
 \label{sec:memorystore}
 
 La logica e le strutture dati per gestire i gadget che ci consentono
@@ -257,10 +263,10 @@ considerazione i gadget con istruzioni tipo \lstinline{push reg}.
 Questi gadget infatti, solitamente non consentono di scrivere in una
 regione arbitraria della memoria, oltre a complicare la gestione dello
 schema dello stack. Dopo di che vengono scartati anche i gadget che
-hanno come registro di destinazione rip e eip. Infatti essendo questo
-registro fisso rispetto all'istruzione che lo esegue neanche questi
-gadget ci consentono di scrivere in una posizione arbitraria di
-memoria.
+hanno come registro di destinazione \lstinline{rip} o
+\lstinline{eip}. Infatti essendo questo registro fisso rispetto
+all'istruzione che lo esegue neanche questi gadget ci consentono di
+scrivere in una posizione arbitraria di memoria.
 
 Dopo di che si procede seguendo le linee guida descritte in
 \ref{sec:verifica_validazione}: il gadget viene scartato se non si
@@ -291,7 +297,7 @@ per scrivere in memoria. Viene restituita la concatenazione delle
 catene create per ogni iterazione, che verosimilmente scriverà in
 memoria, partendo dall'indirizzo indicato i valori in ingresso.
 
-\subsection{Selezione dei gadget per la operazioni aritmetiche in
+\subsection{Gadget per la operazioni aritmetiche in
   memoria}
 \label{sec:arithmeticstore}
 
@@ -317,22 +323,22 @@ precedente, sulla falsa riga della procedura indicata in
 
 Tuttavia un'attenzione particolare va posta nell'analisi dei gadget
 che utilizzano un'operazione di addizione che considerano il valore di
-riporto (ad esempio adc su intel). Questi gadget possono rilevarsi
-molto utili. Spesso infatti sono disponibili solo gadget aritmetici
-che ci consentono di aggiungere un byte per volta. Effettuare
-un'operazione di got patching (vedi sez. \ref{sec:expl}) un
-byte per volta senza considerare i valori di riporto tra un byte e il
-successivo può portare ad un risultato errato dell'operazione che si
-sta effettuando. Per poter permettere la catalogazione di questo
-tipo di gadget, si è dovuto applicare una piccola patch al framework
-per permetterci di poter controllare in qualche modo il contesto dei
-registri che utilizza durante le simulazioni per la
-classificazione. Questo ci ha permesso di impostare durante le
-simulazioni il valore del carry flag a zero, facendo in modo che la
-procedura di catalogazione non scarti i gadget di questo tipo. Anche
-le verifiche tramite un risolutore SMT impongono che il carry flag
-abbia valore zero. In più viene aggiunta una seconda coppia di
-modellazioni SMT con le quali si verifica se il gadget in esame
+riporto (ad esempio adc su architettura intel). Questi gadget possono
+rilevarsi molto utili. Spesso infatti sono disponibili solo gadget
+aritmetici che ci consentono di aggiungere un byte per
+volta. Effettuare un'operazione di got patching (vedi
+sez. \ref{sec:expl}) un byte per volta senza considerare i valori di
+riporto tra un byte e il successivo può portare ad un risultato errato
+dell'operazione che si sta effettuando. Per poter permettere la
+catalogazione di questo tipo di gadget, si è dovuto applicare una
+piccola patch al framework per permetterci di poter controllare in
+qualche modo il contesto dei registri che utilizza durante le
+simulazioni per la classificazione. Questo ci ha permesso di impostare
+durante le simulazioni il valore del carry flag a zero, facendo in
+modo che la procedura di catalogazione non scarti i gadget di questo
+tipo. Anche le verifiche tramite un risolutore SMT impongono che il
+carry flag abbia valore zero. In più viene aggiunta una seconda coppia
+di modellazioni SMT con le quali si verifica se il gadget in esame
 utilizza il carry flag nell'operazione e se a seguito di un'operazione
 che sicuramente generi un valore di riporto, il carry flag al termine
 dell'esecuzione del gadget abbia valore uno. Questo ci dà la certezza
@@ -383,7 +389,7 @@ del file oggetto eseguibile esaminato, denominata Payload. La
 preparazione del payload varia rispetto al gadget per il quale si sta
 creando il chunk e può consistere nel solo indirizzo del gadget, o in
 schemi più complicati come indirizzi di funzioni più relativi
-argomenti o a valori da trasferire dalla stack ai registri. Ogni
+argomenti o a valori da trasferire dallo stack ai registri. Ogni
 classe che si occupa della generazione di un particolare tipo di chunk
 ha le informazioni necessarie per permettere al chunk stesso di essere
 concatenato ad altri chunk per generarne un altro, anch'esso a sua
