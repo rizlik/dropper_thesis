@@ -567,8 +567,39 @@ metodi di modellazione logici come \emph{Answer Set Programming}.
 
 Nelle figure \ref{cod:asm}, \ref{cod:reil} e \ref{cod:smt} sono
 mostrate rispettivamente le istruzioni di un gadget per la scrittura
-in memoria e le relative traduzioni in istruzioni REIL e in una
-formula SMT.
+in memoria e le relative traduzioni in istruzioni REIL e in formule
+SMT.
+
+\begin{lstlisting}[caption=gadget per la scrittura in memoria, label=cod:asm]
+mov dword ptr [rdi], esi
+ret
+\end{lstlisting}
+
+\begin{lstlisting}[caption=traduzione del gadget in fig. \ref{cod:asm}
+    nel linguaggio intermedio REIL, label=cod:reil]
+str   [DWORD esi, EMPTY, DWORD t3]
+stm   [DWORD t3, EMPTY, QWORD rdi]
+
+add   [QWORD rsp, QWORD 0x8, QWORD t2]
+str   [QWORD t2, EMPTY, QWORD rsp]
+ret   [EMPTY, EMPTY, EMPTY]
+\end{lstlisting}
+
+\begin{lstlisting}[caption=traduzione del gadget in fig. \ref{cod:asm}
+    in formule SMT, label=cod:smt]
+
+(= ((_ extract 31 0) rsi_0) t3_1)
+(= MEM_1 
+  (store 
+  (store 
+  (store 
+  (store MEM_0 (bvadd rdi_0 #x0000000000000000) ((_ extract 7 0) t3_1)) 
+  (bvadd rdi_0 #x0000000000000001) ((_ extract 15 8) t3_1))
+  (bvadd rdi_0 #x0000000000000002) ((_ extract 23 16) t3_1))
+  (bvadd rdi_0 #x0000000000000003) ((_ extract 31 24) t3_1)))
+(= t2_1 (bvadd rsp_0 #x0000000000000008))
+(= t2_1 rsp_1)
+\end{lstlisting}
 
 Un'analisi completa della semantica presenta alcuni limiti dovuti alla
 difficoltà di una modellazione completa del sistema nonché alla
