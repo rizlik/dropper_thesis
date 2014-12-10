@@ -268,10 +268,10 @@ hanno come registro di destinazione \lstinline{rip} o
 all'istruzione che lo esegue neanche questi gadget ci consentono di
 scrivere in una posizione arbitraria di memoria.
 
-Dopo di che si procede seguendo le linee guida descritte in
-\ref{sec:verifica_validazione}: il gadget viene scartato se non si
-possono controllare i registri sorgente e destinazione, si verifica e
-valida la generalità e ci si assicura che il gadget non presenti
+Dopo di che, utilizzando le metodologie descritte in
+\ref{sec:verifica_validazione}, il gadget viene scartato se non si
+possono controllare i registri sorgente e destinazione, se ne verifica
+e valida la generalità e ci si assicura che il gadget non presenti
 effetti secondari. Nella verifica degli effetti secondari si controlla
 che non ci siano scritture al di fuori della locazione scelta e dello
 stack.
@@ -317,9 +317,9 @@ memoria (insieme ad un eventuale offset). Dato che la simulazione
 viene ripetuta più volte i falsi positivi vengono ridotti. È possibile
 che un gadget esibisca il comportamento di cui sopra più di una volta,
 anche in questo caso vengono creati diversi oggetti di tipo Arithmetic
-Memory Store. L'analisi di questi gadget procede, come anche nella categoria
-precedente, sulla falsa riga della procedura indicata in
-\ref{sec:verifica_validazione}.
+Memory Store. La verifica di questi gadget procede in maniera molto
+simile a quella dei gadget per la scrittura della memoria.
+
 
 Tuttavia un'attenzione particolare va posta nell'analisi dei gadget
 che utilizzano un'operazione di addizione che considerano il valore di

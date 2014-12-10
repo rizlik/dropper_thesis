@@ -649,7 +649,8 @@ catalogato come \lstinline{MemoryStore} ma che utilizzi lo stesso
 registro come operando di destinazione e operando sorgente non può
 essere utilizzato per scrivere in una locazione arbitraria di memoria
 un valore arbitrario in quanto il valore da scrivere e l'indirizzo di
-memoria sono dipendenti tra di loro.
+memoria sono dipendenti tra di loro. In questa sezione ci riferiamo a
+questa proprietà come alla ``generalità'' del gadget.
 
 Bisogna verificare altresì che l'assegnamento dei valori appropriati
 ai registri ``operandi'' sia condizione sufficiente perché il gadget
@@ -660,59 +661,86 @@ come operandi sono impostati con i valori appropriati, la scrittura in
 memoria del valore voluto sia garantita per qualsiasi altra
 combinazione iniziale dei restanti registri.
 
+Queste due proprietà vengono verificate sia attraverso delle
+simulazioni delle istruzioni nel linguaggio intermedio e sia
+attraverso la sottomissione di istanze SMT ad un risolutore. Vengono
+codificate per questi scopi due tipi di istanza SMT: una la quale
+soddisfacibilità ci garantisce che un dato effetto può essere
+realizzato (e viene anche fornito una configurazione del contesto che
+porta a quell'effetto), e un'altra la quale non soddisfacibilità ci
+garantisce che l'effetto del gadget aderisca alla semantica di
+catalogazione per qualsiasi contesto iniziale. Istanze del primo tipo
+possono essere utilizzate sia per ottenere la configurazione iniziale
+con la quale ottenere un particolare effetto sul contesto, sia per una
+verifica ``ottimista'' della generalità di un gadget (in questo caso
+si utilizzano dei valori casuali e si assume che, se l'istanza è
+soddisfacibile per alcuni valori casuali allora il gadget è generico).
 
-Le verifiche che ci consentono di verificare le due proprietà appena
-discusse sono dipendenti dalla tipologia di gadget, ma possono essere
-tutte ricondotte alla seguente strategia generale: 
-\begin{enumerate}
-\item si scelgono casualmente gli effetti che deve avere la funzione
-  sul contesto
-\item si traduce il gadget in formule logiche e si impone che il
-  contesto finale rifletta gli effetti scelti, nel caso l'insieme
-  delle formule ottenuto non sia soddisfacibile il gadget può essere
-  scartato
-\item si richiede al risolutore logico il modello che rende vera la
-  formula al punto precedente e da questo modello si ricavano i valori
-  iniziali dei registri operandi
-\item si ricrea la rappresentazione del gadget in formule logiche ma
-  forzando i valori dei registri iniziali ai valori ottenuti al punto
-  precedente e imponendo come condizione finale la formula che
-  rappresenta il complementare degli effetti voluti
-\item si verifica che il modello del punto precedente non sia
-  soddisfacibile
-\end{enumerate}
+Le istanze del primo tipo vengono create imponendo al modello che il
+contesto finale rifletti l'effetto desiderato, quelle del secondo tipo
+invece imponendo il complementare della condizione che rappresenta la
+semantica che si sta cercando di verificare. Ad esempio per un gadget
+utilizzato per la scrittura in memoria, nel quale sono stati
+individuati \lstinline{rdi} come registro di destinazione e
+\lstinline{rsi} come registro sorgente, viene imposto che la locazione
+di memoria individuata da \lstinline{rdi} \textbf{non} abbia come
+valore finale il valore di \lstinline{rsi}. La non soddisfacibilità di
+questa formula ci garantisce la validità che il gadget scriva sempre
+il valore presente nel registro sorgente nella locazione di memoria
+individuata dall'indirizzo presente nel registro di destinazione.
 
-Ad esempio se stiamo verificando un \lstinline{MemoryStore} si sceglie
-sia una locazione casuale di memoria sia un valore casuale da scrivere
-in questa locazione. Si traduce il gadget in formule logiche e si
-impone che nel contesto finale che la locazione di memoria scelta
-cambi al valore casuale scelto. Si chiede a questo punto al risolutore
-se il sistema di formule ammette una soluzione. Se il sistema non
-ammette soluzione il gadget può essere scartato, in quanto non essendo
-usabile per i valori scelti perde la sua generalità. Nel caso invece
-il sistema ammetta soluzione vengono richiesti al risolutore i valori
-iniziali, all'interno del modello trovato, dei registri ``operandi''
-della funzione, quelli utilizzati per impostare indirizzo di
-destinazione e valore da scrivere. Si impongono poi al risolutore
-nuovamente le formule logiche che rappresentano il gadget ma vengono
-``forzati'' come valori iniziali per i registri operandi i valori
-ottenuti dalla prima verifica e, inoltre, si impone che il valore
-finale sia diverso da quello aspettato. La non soddisfacibilità di
-questa formula ci dà la certezza che per i valori iniziali dei
-registri operandi ottenuti dalla prima verifica, lo stato finale del
-contesto rispecchi i valori attesi. Questa verifica esclude che ci
-siano effetti secondari che possono interferire con gli effetti della
-nostra funzione.
+%% Le verifiche che ci consentono di verificare le due proprietà appena
+%% discusse sono dipendenti dalla tipologia di gadget, ma possono essere
+%% tutte ricondotte alla seguente strategia generale: 
+%% \begin{enumerate}
+%% \item si scelgono casualmente gli effetti che deve avere la funzione
+%%   sul contesto
+%% \item si traduce il gadget in formule logiche e si impone che il
+%%   contesto finale rifletta gli effetti scelti, nel caso l'insieme
+%%   delle formule ottenuto non sia soddisfacibile il gadget può essere
+%%   scartato
+%% \item si richiede al risolutore logico il modello che rende vera la
+%%   formula al punto precedente e da questo modello si ricavano i valori
+%%   iniziali dei registri operandi
+%% \item si ricrea la rappresentazione del gadget in formule logiche ma
+%%   forzando i valori dei registri iniziali ai valori ottenuti al punto
+%%   precedente e imponendo come condizione finale la formula che
+%%   rappresenta il complementare degli effetti voluti
+%% \item si verifica che il modello del punto precedente non sia
+%%   soddisfacibile
+%% \end{enumerate}
 
-È da notare che queste proprietà sono verificate solo per dei valori
-casuali e dovrebbero essere verificate per tutti i valori. Questo non
-viene fatto sia per motivi di efficienza sia per non includere
-quantificatori universali nelle formule, complicando di molto il
-lavoro del risolutore. Questo problema può essere risolto sia
-ripetendo queste verifiche al momento dell'utilizzo reale del gadget
-con i valori concretamente utilizzati sia esprimendo gli effetti in
-relazione ai valori iniziali, utilizzando l'esecuzione simbolica per
-ricavare queste relazioni.
+%% Ad esempio se stiamo verificando un \lstinline{MemoryStore} si sceglie
+%% sia una locazione casuale di memoria sia un valore casuale da scrivere
+%% in questa locazione. Si traduce il gadget in formule logiche e si
+%% impone che nel contesto finale che la locazione di memoria scelta
+%% cambi al valore casuale scelto. Si chiede a questo punto al risolutore
+%% se il sistema di formule ammette una soluzione. Se il sistema non
+%% ammette soluzione il gadget può essere scartato, in quanto non essendo
+%% usabile per i valori scelti perde la sua generalità. Nel caso invece
+%% il sistema ammetta soluzione vengono richiesti al risolutore i valori
+%% iniziali, all'interno del modello trovato, dei registri ``operandi''
+%% della funzione, quelli utilizzati per impostare indirizzo di
+%% destinazione e valore da scrivere. Si impongono poi al risolutore
+%% nuovamente le formule logiche che rappresentano il gadget ma vengono
+%% ``forzati'' come valori iniziali per i registri operandi i valori
+%% ottenuti dalla prima verifica e, inoltre, si impone che il valore
+%% finale sia diverso da quello aspettato. La non soddisfacibilità di
+%% questa formula ci dà la certezza che per i valori iniziali dei
+%% registri operandi ottenuti dalla prima verifica, lo stato finale del
+%% contesto rispecchi i valori attesi. Questa verifica esclude che ci
+%% siano effetti secondari che possono interferire con gli effetti della
+%% nostra funzione.
+
+%% È da notare che queste proprietà sono verificate solo per dei valori
+%% casuali e dovrebbero essere verificate per tutti i valori. Questo non
+%% viene fatto sia per motivi di efficienza sia per non includere
+%% quantificatori universali nelle formule, complicando di molto il
+%% lavoro del risolutore. Questo problema può essere risolto sia
+%% ripetendo queste verifiche al momento dell'utilizzo reale del gadget
+%% con i valori concretamente utilizzati sia esprimendo gli effetti in
+%% relazione ai valori iniziali, utilizzando l'esecuzione simbolica per
+%% ricavare queste relazioni.
 
 \subsection{Verifica degli effetti secondari}  
 
@@ -720,15 +748,16 @@ Il punto precedente ci assicura che un gadget non abbia effetti
 secondari che interferiscano con gli effetti della nostra
 funzione. Tuttavia è possibile che il gadget in esame abbia altri
 effetti secondari che non lo rendano utilizzabile. Ad esempio se il
-gadget legge da una locazione di memoria non leggibile causerà
-l'arresto del programma. La modellazione in formule logiche utilizzata
-attualmente nel framework BARF non consente di porre al risolutore
-domande sul numero di letture in memoria o sulla lettura o meno di
-un'area di memoria. Per questo motivo per escludere effetti secondari
-di questo tipo il gadget viene emulato con i valori di ingresso
-ricavati nella fase di verifica e validazione, e ci si assicura che
-non vengano lette e scritte aree di memoria che non siano quelle
-relative alla funzione propria del gadget o all'area dello stack.
+gadget tenta di leggere da una locazione di memoria marcata come non
+leggibile causerà l'arresto del programma. La modellazione in formule
+logiche utilizzata attualmente nel framework BARF non consente di
+porre al risolutore domande sul numero di letture in memoria o sulla
+lettura o meno di un'area di memoria. Per questo motivo per escludere
+effetti secondari di questo tipo il gadget viene emulato con i valori
+di ingresso ricavati nella fase di verifica e validazione, e ci si
+assicura che non vengano lette e scritte aree di memoria che non siano
+quelle relative alla funzione propria del gadget o all'area dello
+stack.
 
 
 La linea guida generale appena descritta va adattata alla tipologia di

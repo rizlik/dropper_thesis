@@ -13,6 +13,7 @@
 \usepackage{hyperref}
 %\usepackage{amsmath}
 %\usepackage{amsfonts}
+\usepackage{frontespizio}
 \usepackage{fancyhdr}
 \usepackage{paralist}
 
@@ -69,8 +70,25 @@ basicstyle=\footnotesize\ttfamily,
 \newcommand{\code}[1]{\lstinline$#1$}
 
 
-\include{frontespizio}
+%%\include{frontespizio}
 \begin{document}
+
+\begin{frontespizio}
+\Istituzione{Università della Calabria} 
+\Logo[3.5cm]{unical}
+%\Facolta{Scienze Matematiche Fisiche e Naturali}
+\Corso[Laurea]{Informatica} 
+\Annoaccademico{2013--2014}
+\Dipartimento{Matematica e Informatica} 
+\Titoletto{Tesi di laurea magistrale} 
+\Titolo{Dropper:
+  uno strumento per la generazione semiautomatica di payload
+  finalizzati all'explotation tramite Return Oriented Programming}
+\Candidato[152469]{Marco Oliverio} \Relatore{Giovambattista Ianni}
+\Margini{2.0cm}{1.5cm}{2.0cm}{1.5cm}
+\end{frontespizio}
+
+
 
 %Frontespizio
 %Per avere il frontespizio compilare tesi.tex, poi tesi-frn.tex e dinuovo tesi.tex:
