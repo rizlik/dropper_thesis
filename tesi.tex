@@ -13,10 +13,9 @@
 \usepackage{hyperref}
 %\usepackage{amsmath}
 %\usepackage{amsfonts}
-\usepackage{frontespizio}
+\usepackage[swapnames]{frontespizio}
 \usepackage{fancyhdr}
 \usepackage{paralist}
-
 %listening
 \lstset{
 language=Python,                % choose the language of the code
@@ -84,7 +83,8 @@ basicstyle=\footnotesize\ttfamily,
 \Titolo{Dropper:
   uno strumento per la generazione semiautomatica di payload
   finalizzati all'explotation tramite Return Oriented Programming}
-\Candidato[152469]{Marco Oliverio} \Relatore{Giovambattista Ianni}
+ \Relatore{Prof. Giovambattista Ianni}
+\Candidato[152469]{Marco Oliverio}
 \Margini{2.0cm}{1.5cm}{2.0cm}{1.5cm}
 \end{frontespizio}
 
@@ -119,13 +119,17 @@ basicstyle=\footnotesize\ttfamily,
 %% \clearpage{\pagestyle{empty}\cleardoublepage}
 %% \clearpage{\pagestyle{empty}\cleardoublepage}
 %% \frontmatter
-\tableofcontents
 
+
+\include{dedica}
+
+\tableofcontents
 \include{introduzione}
 \include{exploit}
 \include{architettura}
 \include{implementazione}
 \include{conclusioni}
+\include{ringraziamenti}
 
 %% \clearpage{\pagestyle{empty}\cleardoublepage}
 %% \listoffigures \addcontentsline{toc}{chapter}{Indice delle figure}
