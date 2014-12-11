@@ -85,30 +85,37 @@ eseguibili contenuti nelle bin-utils (ls, echo, mv).
 
 \section{Sviluppi futuri}
 
-Dropper ha prospettive di sviluppo su diversi fronti. 
+Di seguito sono elencate alcune idee per lo sviluppo futuro di Dropper:
 
-Sicuramente l'utilizzo di un'esecuzione simbolica semplificherebbe di
-molto l'analisi semantica, potendo verificare direttamente le
-relazioni tra valori in ingresso ed effetti dei gadget.
+\begin{itemize}
 
-Dai primi risultati ottenuti utilizzando un planner,  ci si è resi
-conto che quest'area potrebbe portare notevoli vantaggi ma che
-richiede ulteriori indagini.
+  \item Utilizzo di un'esecuzione simbolica, che semplificherebbe di
+    molto l'analisi semantica, potendo verificare direttamente le
+    relazioni tra valori in ingresso ed effetti dei gadget
 
-Un'altra idea interessante è cercare di estrapolare non solo gadget
-``classici'' ma anche altre tipologie. Ad esempio un'estensione della
-ROP consiste nell'utilizzare sequenze di istruzioni che terminano con
-un'istruzione di tipo \lstinline{jmp} invece che con una di tipo
-\lstinline{ret} (infatti questa tecnica prende il nome di \emph{Jump
-  Oriented Programming} \cite{Checkoway-10}).
+  \item Ulteriori indagini sull'utilizzo di una modellazione in
+    problemi di planning
 
-Un altro esempio è quello di ricercare gadget di lunghezza maggiore ma
-con effetti secondari ``controllabili'', ad esempio obbligando il
-gadget a seguire un flusso di esecuzione piuttosto che
-un altro. Quest'ultima tipologia di gadget è necessaria per eludere
-alcune tecniche di mitigazione che si basano sul monitoraggio di un
-numero limitato di istruzioni.
+  \item Estrapolazione di gadget non ``classici''. Ad esempio
+        un'estensione della ROP consiste nell'utilizzare sequenze di
+        istruzioni che terminano con un'istruzione di tipo
+        \lstinline{jmp} invece che con una di tipo \lstinline{ret}
+        (infatti questa tecnica prende il nome di \emph{Jump Oriented
+          Programming} \cite{Checkoway-10}).
+        Un altro esempio è quello di ricercare gadget di lunghezza maggiore ma
+        con effetti secondari ``controllabili'', ad esempio obbligando il
+        gadget a seguire un flusso di esecuzione piuttosto che
+        un altro. Quest'ultima tipologia di gadget è necessaria per eludere
+        alcune tecniche di mitigazione che si basano sul monitoraggio di un
+        numero limitato di istruzioni
 
+      \item Aumentare le architetture supportate
+
+      \item Implementazione di nuove strategie di exploit e rendere
+        più semplice l'incorporazione di strategie definite
+        dall'utente
+
+\end{itemize}
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "tesi"
