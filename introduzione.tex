@@ -95,26 +95,27 @@ tuttavia possibile che si riesca a sfruttare qualche altro errore di
 programmazione per ottenere l'indirizzo della libreri che \`{e} fonte del codice riusabile, 
 riuscendo cos\`{\i} a montare comunque l'attacco.
 
-Una generalizzazione della return-to-libc \`{e} la tecnica che prende il
-nome di \emph{Return Oriented
+Una generalizzazione della return-to-libc \`{e} la tecnica che prende
+il nome di \emph{Return Oriented
   Programming}\cite{Shacham-2007,Roemer-2012}. In questo caso il
 flusso viene redirezionato non pi\`{u} all'inizio di una funzione, ma
-all'inizio di una piccola serie di istruzioni, gi\`{a} presenti in un area
-di memoria del programma marcata come eseguibile, seguita da
-un'istruzione {\em ret}. L'istruzione ret preleva dalla memoria dello stack
-un indirizzo e ridireziona il flusso del programma a quel dato
-indirizzo e viene solitamente utilizzata al termine dell'esecuzione di
-una funzione per tornare alla porzione di codice che l'ha
-richiamata. Potendo controllare lo stack l'attaccante pu\`{o} arrangiarlo
-in modo che una volta che l'esecuzione arrivi all'istruzione ret della
-prima serie, sullo stack sia presente l'indirizzo di una seconda serie
-dalle caratteristiche simili alla prima. Iterando questa tecnica pi\`{u}
-volte \`{e} possibile concatenare un numero arbitrario di queste piccole
-serie di istruzioni (che prendono il nome di \emph{gadget}). L'insieme
-degli indirizzi dei gadget e dei parametri che se iniettati sullo
-stack deviano il flusso del programma in modo da eseguire una catena
-di gadget vengono denominati, sebbene con un piccolo abuso del
-termine, \emph{payload}. La ROP \`{e} stata presentata per la prima volta in
+all'inizio di una piccola serie di istruzioni, gi\`{a} presenti in un
+area di memoria del programma marcata come eseguibile, seguita da
+un'istruzione \lstinline{ret}. L'istruzione \lstinline{ret} preleva dalla
+memoria dello stack un indirizzo e ridireziona il flusso del programma
+a quel dato indirizzo e viene solitamente utilizzata al termine
+dell'esecuzione di una funzione per tornare alla porzione di codice
+che l'ha richiamata. Potendo controllare lo stack l'attaccante pu\`{o}
+arrangiarlo in modo che una volta che l'esecuzione arrivi
+all'istruzione \lstinline{ret} della prima serie, sullo stack sia
+presente l'indirizzo di una seconda serie dalle caratteristiche simili
+alla prima. Iterando questa tecnica pi\`{u} volte \`{e} possibile
+concatenare un numero arbitrario di queste piccole serie di istruzioni
+(che prendono il nome di \emph{gadget}). L'insieme degli indirizzi dei
+gadget e dei parametri che se iniettati sullo stack deviano il flusso
+del programma in modo da eseguire una catena di gadget vengono
+denominati, sebbene con un piccolo abuso del termine,
+\emph{payload}. La ROP \`{e} stata presentata per la prima volta in
 \cite{Shacham-2007} e, quando sono presenti opportune tipologie di
 gadget, utilizzando il ROP si possono effettuare computazioni
 turing-complete. Tramite la ROP \`{e} possibile applicare tecniche per
